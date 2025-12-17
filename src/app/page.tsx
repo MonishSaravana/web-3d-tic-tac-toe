@@ -111,6 +111,12 @@ export default function HomePage() {
                   🔗 Join Game
                 </Button>
               </div>
+
+              <Link href="/tournament/create" className={styles.playLink}>
+                <Button variant="ghost" size="lg" fullWidth disabled={!nickname.trim()}>
+                  🏆 Tournament Mode
+                </Button>
+              </Link>
             </div>
           </div>
 
