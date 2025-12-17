@@ -1,0 +1,98 @@
+/* Move Timer Styles */
+
+.timer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--space-md);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    position: relative;
+    overflow: hidden;
+}
+
+.timer.active {
+    border-color: var(--text-primary);
+    background: var(--bg-elevated);
+}
+
+.timer.low {
+    border-color: var(--warning);
+    background: rgba(234, 179, 8, 0.1);
+}
+
+.timer.critical {
+    border-color: var(--error);
+    background: rgba(239, 68, 68, 0.1);
+    animation: shake 0.5s ease-in-out infinite;
+}
+
+.timeDisplay {
+    font-size: 2rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+    letter-spacing: 0.1em;
+}
+
+.timer.low .timeDisplay {
+    color: var(--warning);
+}
+
+.timer.critical .timeDisplay {
+    color: var(--error);
+}
+
+.modeLabel {
+    font-size: 0.625rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    margin-top: var(--space-xs);
+}
+
+.warningPulse {
+    position: absolute;
+    inset: 0;
+    background: currentColor;
+    opacity: 0;
+    animation: pulse 1s ease-in-out infinite;
+    pointer-events: none;
+}
+
+.timer.low .warningPulse {
+    background: var(--warning);
+}
+
+.timer.critical .warningPulse {
+    background: var(--error);
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 0;
+    }
+
+    50% {
+        opacity: 0.1;
+    }
+}
+
+@keyframes shake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(-2px);
+    }
+
+    75% {
+        transform: translateX(2px);
+    }
+}

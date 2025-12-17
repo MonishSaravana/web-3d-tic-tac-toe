@@ -8,7 +8,7 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { Position, PlayerNumber, positionToIndex, DEFAULT_PIECES } from '@/lib/game/types';
 import { isValidTakeover } from '@/lib/game/logic';
-import { GameHUD, WinOverlay } from '@/components/game';
+import { GameHUD, WinOverlay, MoveTimer, GameTimer } from '@/components/game';
 import { Button, ThemeToggle, Card, Modal } from '@/components/ui';
 import { playPlace, playTakeover, playWin, playError, sounds } from '@/lib/sounds';
 import styles from './page.module.css';
@@ -28,11 +28,15 @@ const GameBoard = dynamic(
 );
 
 type PlayerCount = 2 | 3;
+type TimerModeType = 'unlimited' | 'per_move' | 'time_bank';
 
 interface GameSettings {
     playerCount: PlayerCount;
     takeoversPer: number;
     confirmMoves: boolean;
+    timerMode: TimerModeType;
+    timePerMove: number;
+    timeBank: number;
 }
 
 interface LocalGameState {
@@ -42,12 +46,16 @@ interface LocalGameState {
     winner: PlayerNumber | null;
     winningLine: Position[] | null;
     pendingMove: Position | null;
+    timeRemaining: Record<PlayerNumber, number>;
 }
 
 const DEFAULT_SETTINGS: GameSettings = {
     playerCount: 2,
     takeoversPer: 5,
     confirmMoves: true,
+    timerMode: 'unlimited',
+    timePerMove: 30,
+    timeBank: 120,
 };
 
 function createInitialState(settings: GameSettings): LocalGameState {
@@ -57,6 +65,12 @@ function createInitialState(settings: GameSettings): LocalGameState {
         3: settings.playerCount === 3 ? settings.takeoversPer : 0,
     };
 
+    const timeRemaining: Record<PlayerNumber, number> = {
+        1: settings.timeBank,
+        2: settings.timeBank,
+        3: settings.playerCount === 3 ? settings.timeBank : 0,
+    };
+
     return {
         board: Array(27).fill(null),
         currentTurn: 1,
@@ -64,6 +78,7 @@ function createInitialState(settings: GameSettings): LocalGameState {
         winner: null,
         winningLine: null,
         pendingMove: null,
+        timeRemaining,
     };
 }
 
@@ -134,21 +149,25 @@ export default function LocalGamePage() {
                     return;
                 }
 
-                const newBoard = applyMove(board, position, currentPlayer);
-                playTakeover();
-
-                setGame(prev => ({
-                    ...prev,
-                    board: newBoard,
-                    currentTurn: getNextPlayer(currentPlayer),
-                    takeovers: {
-                        ...prev.takeovers,
-                        [currentPlayer]: prev.takeovers[currentPlayer] - 1,
-                    },
-                }));
-
-                setIsTakeoverMode(false);
-                setSelectedCell(null);
+                // If confirm mode, set pending, else apply
+                if (settings.confirmMoves) {
+                    setGame(prev => ({ ...prev, pendingMove: position }));
+                    setSelectedCell(position);
+                } else {
+                    const newBoard = applyMove(board, position, currentPlayer);
+                    playTakeover();
+                    setGame(prev => ({
+                        ...prev,
+                        board: newBoard,
+                        currentTurn: getNextPlayer(currentPlayer),
+                        takeovers: {
+                            ...prev.takeovers,
+                            [currentPlayer]: prev.takeovers[currentPlayer] - 1,
+                        },
+                    }));
+                    setIsTakeoverMode(false);
+                    setSelectedCell(null);
+                }
             }
         } else {
             if (cellValue === null) {
@@ -156,34 +175,95 @@ export default function LocalGamePage() {
                     return;
                 }
 
-                const newBoard = applyMove(board, position, currentPlayer);
-                const winResult = checkWin(newBoard);
-
-                playPlace();
-
-                if (winResult) {
-                    setGame(prev => ({
-                        ...prev,
-                        board: newBoard,
-                        winner: winResult.winner,
-                        winningLine: winResult.winningLine,
-                    }));
-                    setTimeout(() => {
-                        playWin();
-                        setShowWinOverlay(true);
-                    }, 500);
+                // If confirm mode, set pending, else apply immediately
+                if (settings.confirmMoves) {
+                    setGame(prev => ({ ...prev, pendingMove: position }));
+                    setSelectedCell(position);
                 } else {
-                    setGame(prev => ({
-                        ...prev,
-                        board: newBoard,
-                        currentTurn: getNextPlayer(currentPlayer),
-                    }));
-                }
+                    const newBoard = applyMove(board, position, currentPlayer);
+                    const winResult = checkWin(newBoard);
+                    playPlace();
 
-                setSelectedCell(null);
+                    if (winResult) {
+                        setGame(prev => ({
+                            ...prev,
+                            board: newBoard,
+                            winner: winResult.winner,
+                            winningLine: winResult.winningLine,
+                        }));
+                        setTimeout(() => {
+                            playWin();
+                            setShowWinOverlay(true);
+                        }, 500);
+                    } else {
+                        setGame(prev => ({
+                            ...prev,
+                            board: newBoard,
+                            currentTurn: getNextPlayer(currentPlayer),
+                        }));
+                    }
+                    setSelectedCell(null);
+                }
             }
         }
+    }, [game, isTakeoverMode, settings.playerCount, settings.confirmMoves]);
+
+    // Confirm pending move
+    const confirmMove = useCallback(async () => {
+        if (!game.pendingMove) return;
+
+        const { checkWin, applyMove } = await import('@/lib/game/logic');
+        const position = game.pendingMove;
+        const currentPlayer = game.currentTurn;
+
+        const newBoard = applyMove(game.board, position, currentPlayer);
+
+        if (isTakeoverMode) {
+            playTakeover();
+            setGame(prev => ({
+                ...prev,
+                board: newBoard,
+                currentTurn: getNextPlayer(currentPlayer),
+                takeovers: {
+                    ...prev.takeovers,
+                    [currentPlayer]: prev.takeovers[currentPlayer] - 1,
+                },
+                pendingMove: null,
+            }));
+            setIsTakeoverMode(false);
+        } else {
+            playPlace();
+            const winResult = checkWin(newBoard);
+
+            if (winResult) {
+                setGame(prev => ({
+                    ...prev,
+                    board: newBoard,
+                    winner: winResult.winner,
+                    winningLine: winResult.winningLine,
+                    pendingMove: null,
+                }));
+                setTimeout(() => {
+                    playWin();
+                    setShowWinOverlay(true);
+                }, 500);
+            } else {
+                setGame(prev => ({
+                    ...prev,
+                    board: newBoard,
+                    currentTurn: getNextPlayer(currentPlayer),
+                    pendingMove: null,
+                }));
+            }
+        }
+        setSelectedCell(null);
     }, [game, isTakeoverMode, settings.playerCount]);
+
+    // Cancel pending move
+    const cancelPendingMove = () => {
+        setGame(prev => ({ ...prev, pendingMove: null }));
+        setSelectedCell(null);
+    };
 
     const resetGame = () => {
         setGame(createInitialState(settings));
@@ -236,13 +316,13 @@ export default function LocalGamePage() {
                             <div className={styles.buttonGroup}>
                                 <button
                                     className={`${styles.optionBtn} ${settings.playerCount === 2 ? styles.active : ''}`}
-                                    onClick={() => setSettings(s => ({ ...s, playerCount: 2 }))}
+                                    onClick={() => setSettings(s => ({ ...s, playerCount: 2, takeoversPer: 5 }))}
                                 >
                                     2 Players
                                 </button>
                                 <button
                                     className={`${styles.optionBtn} ${settings.playerCount === 3 ? styles.active : ''}`}
-                                    onClick={() => setSettings(s => ({ ...s, playerCount: 3 }))}
+                                    onClick={() => setSettings(s => ({ ...s, playerCount: 3, takeoversPer: 3 }))}
                                 >
                                     3 Players
                                 </button>
@@ -251,18 +331,21 @@ export default function LocalGamePage() {
 
                         <div className={styles.settingGroup}>
                             <label>Takeovers per Player</label>
-                            <div className={styles.buttonGroup}>
-                                {[3, 5, 7].map(n => (
-                                    <button
-                                        key={n}
-                                        className={`${styles.optionBtn} ${settings.takeoversPer === n ? styles.active : ''}`}
-                                        onClick={() => setSettings(s => ({ ...s, takeoversPer: n }))}
-                                    >
-                                        {n}
-                                    </button>
-                                ))}
+                            <div className={styles.numberInput}>
+                                <button
+                                    className={styles.numBtn}
+                                    onClick={() => setSettings(s => ({ ...s, takeoversPer: Math.max(1, s.takeoversPer - 1) }))}
+                                >
+                                    −
+                                </button>
+                                <span className={styles.numValue}>{settings.takeoversPer}</span>
+                                <button
+                                    className={styles.numBtn}
+                                    onClick={() => setSettings(s => ({ ...s, takeoversPer: Math.min(20, s.takeoversPer + 1) }))}
+                                >
+                                    +
+                                </button>
                             </div>
-                            <span className={styles.settingHint}>5 recommended</span>
                         </div>
 
                         <div className={styles.settingGroup}>
@@ -274,6 +357,75 @@ export default function LocalGamePage() {
                                 {soundEnabled ? '🔊 Enabled' : '🔇 Disabled'}
                             </button>
                         </div>
+
+                        <div className={styles.settingGroup}>
+                            <label>Confirm Before Move</label>
+                            <button
+                                className={`${styles.optionBtn} ${styles.fullWidth} ${settings.confirmMoves ? styles.active : ''}`}
+                                onClick={() => setSettings(s => ({ ...s, confirmMoves: !s.confirmMoves }))}
+                            >
+                                {settings.confirmMoves ? '✓ Enabled' : '✕ Disabled'}
+                            </button>
+                            <span className={styles.settingHint}>Prevents accidental clicks while rotating</span>
+                        </div>
+
+                        <div className={styles.settingGroup}>
+                            <label>Move Timer</label>
+                            <div className={styles.buttonGroup}>
+                                <button
+                                    className={`${styles.optionBtn} ${settings.timerMode === 'unlimited' ? styles.active : ''}`}
+                                    onClick={() => setSettings(s => ({ ...s, timerMode: 'unlimited' }))}
+                                >
+                                    ∞ None
+                                </button>
+                                <button
+                                    className={`${styles.optionBtn} ${settings.timerMode === 'per_move' ? styles.active : ''}`}
+                                    onClick={() => setSettings(s => ({ ...s, timerMode: 'per_move' }))}
+                                >
+                                    ⏱ Per Move
+                                </button>
+                                <button
+                                    className={`${styles.optionBtn} ${settings.timerMode === 'time_bank' ? styles.active : ''}`}
+                                    onClick={() => setSettings(s => ({ ...s, timerMode: 'time_bank' }))}
+                                >
+                                    🏦 Time Bank
+                                </button>
+                            </div>
+                        </div>
+
+                        {settings.timerMode === 'per_move' && (
+                            <div className={styles.settingGroup}>
+                                <label>Seconds Per Move</label>
+                                <div className={styles.buttonGroup}>
+                                    {[15, 30, 60].map(n => (
+                                        <button
+                                            key={n}
+                                            className={`${styles.optionBtn} ${settings.timePerMove === n ? styles.active : ''}`}
+                                            onClick={() => setSettings(s => ({ ...s, timePerMove: n }))}
+                                        >
+                                            {n}s
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {settings.timerMode === 'time_bank' && (
+                            <div className={styles.settingGroup}>
+                                <label>Time Bank (Total)</label>
+                                <div className={styles.buttonGroup}>
+                                    {[60, 120, 300].map(n => (
+                                        <button
+                                            key={n}
+                                            className={`${styles.optionBtn} ${settings.timeBank === n ? styles.active : ''}`}
+                                            onClick={() => setSettings(s => ({ ...s, timeBank: n }))}
+                                        >
+                                            {n >= 60 ? `${n / 60}m` : `${n}s`}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         <Button variant="primary" size="lg" fullWidth onClick={startGame}>
                             Start Game
@@ -296,6 +448,7 @@ export default function LocalGamePage() {
                 </button>
 
                 <div className={styles.headerCenter}>
+                    <GameTimer isRunning={!game.winner} />
                     <span className={styles.turnIndicator}>
                         Player {game.currentTurn}'s Turn
                     </span>
@@ -329,6 +482,23 @@ export default function LocalGamePage() {
 
                     {/* HUD */}
                     <div className={styles.hudContainer}>
+                        {/* Move Timer */}
+                        {settings.timerMode !== 'unlimited' && !game.winner && (
+                            <MoveTimer
+                                mode={settings.timerMode}
+                                timePerMove={settings.timePerMove}
+                                timeRemaining={game.timeRemaining[game.currentTurn]}
+                                isActive={!game.pendingMove}
+                                onTimeUp={() => {
+                                    // Auto-skip turn when time runs out
+                                    const nextPlayer = settings.playerCount === 2
+                                        ? (game.currentTurn === 1 ? 2 : 1)
+                                        : (game.currentTurn === 3 ? 1 : (game.currentTurn + 1) as PlayerNumber);
+                                    setGame(prev => ({ ...prev, currentTurn: nextPlayer }));
+                                }}
+                            />
+                        )}
+
                         <GameHUD
                             players={players}
                             currentTurn={game.currentTurn}
@@ -339,7 +509,22 @@ export default function LocalGamePage() {
                             onPlayAgain={resetGame}
                         />
 
-                        {!game.winner && (
+                        {/* Confirm buttons for pending move */}
+                        {game.pendingMove && (
+                            <div className={styles.confirmControls}>
+                                <p className={styles.confirmPrompt}>Confirm your move?</p>
+                                <div className={styles.confirmButtons}>
+                                    <Button variant="ghost" onClick={cancelPendingMove}>
+                                        ✕ Cancel
+                                    </Button>
+                                    <Button variant="primary" onClick={confirmMove}>
+                                        ✓ Confirm
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+
+                        {!game.winner && !game.pendingMove && (
                             <div className={styles.extraControls}>
                                 <Button variant="ghost" fullWidth onClick={resetGame}>
                                     Reset Game
