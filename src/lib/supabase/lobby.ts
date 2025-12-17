@@ -335,3 +335,59 @@ export async function leaveLobby(playerId: string): Promise<void> {
         .delete()
         .eq('id', playerId);
 }
+
+// Kick a player from the lobby (admin only - player 1)
+export async function kickPlayer(
+    kickerId: string,
+    targetPlayerId: string,
+    lobbyId: string
+): Promise<{ success: boolean; error?: string }> {
+    // First verify the kicker is player 1 (admin)
+    const { data: kicker } = await supabase
+        .from('players')
+        .select('player_number')
+        .eq('id', kickerId)
+        .single();
+
+    if (!kicker || kicker.player_number !== 1) {
+        return { success: false, error: 'Only the lobby creator can kick players' };
+    }
+
+    // Verify target is in the same lobby and not the admin
+    const { data: target } = await supabase
+        .from('players')
+        .select('player_number, lobby_id')
+        .eq('id', targetPlayerId)
+        .single();
+
+    if (!target || target.lobby_id !== lobbyId) {
+        return { success: false, error: 'Player not found in lobby' };
+    }
+
+    if (target.player_number === 1) {
+        return { success: false, error: 'Cannot kick the lobby creator' };
+    }
+
+    // Remove the player
+    await supabase
+        .from('players')
+        .delete()
+        .eq('id', targetPlayerId);
+
+    return { success: true };
+}
+
+// Close a lobby (admin only)
+export async function closeLobby(lobbyId: string): Promise<void> {
+    // Delete all players first
+    await supabase
+        .from('players')
+        .delete()
+        .eq('lobby_id', lobbyId);
+
+    // Update lobby status
+    await supabase
+        .from('lobbies')
+        .update({ status: 'finished' })
+        .eq('id', lobbyId);
+}

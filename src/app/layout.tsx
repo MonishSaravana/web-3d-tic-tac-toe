@@ -38,7 +38,7 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
       </head>
-      <body className={spaceMono.variable}>
+      <body className={spaceMono.variable} suppressHydrationWarning>
         {children}
       </body>
     </html>

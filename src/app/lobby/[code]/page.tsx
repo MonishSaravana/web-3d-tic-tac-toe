@@ -176,10 +176,29 @@ export default function LobbyWaitingRoom() {
         router.push('/');
     }, [localPlayer, router]);
 
+    const handleKick = useCallback(async (targetPlayerId: string) => {
+        if (!localPlayer || !lobby) return;
+        const { kickPlayer } = await import('@/lib/supabase');
+        const result = await kickPlayer(localPlayer.id, targetPlayerId, lobby.id);
+        if (!result.success) {
+            alert(result.error);
+        }
+    }, [localPlayer, lobby]);
+
     const copyCode = () => {
         navigator.clipboard.writeText(lobbyCode);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
+    };
+
+    const [linkCopied, setLinkCopied] = useState(false);
+    const copyLink = () => {
+        const url = typeof window !== 'undefined'
+            ? `${window.location.origin}/lobby/${lobbyCode}`
+            : `https://yourdomain.com/lobby/${lobbyCode}`;
+        navigator.clipboard.writeText(url);
+        setLinkCopied(true);
+        setTimeout(() => setLinkCopied(false), 2000);
     };
 
     const allPlayersReady = players.length >= 2 && players.every(p => p.is_ready);
@@ -278,16 +297,21 @@ export default function LobbyWaitingRoom() {
                 ) : (
                     /* Waiting room */
                     <div className={styles.waitingRoom}>
-                        {/* Lobby code */}
+                        {/* Lobby code & link */}
                         <Card padding="md" className={styles.codeCard}>
                             <span className={styles.codeLabel}>Lobby Code</span>
                             <div className={styles.codeRow}>
                                 <span className={styles.code}>{lobbyCode}</span>
-                                <Button variant="ghost" size="sm" onClick={copyCode}>
-                                    {copied ? '✓ Copied' : 'Copy'}
+                            </div>
+                            <div className={styles.shareButtons}>
+                                <Button variant="secondary" size="sm" onClick={copyCode}>
+                                    {copied ? '✓ Copied Code' : '📋 Copy Code'}
+                                </Button>
+                                <Button variant="primary" size="sm" onClick={copyLink}>
+                                    {linkCopied ? '✓ Copied Link' : '🔗 Copy Link'}
                                 </Button>
                             </div>
-                            <span className={styles.codeHint}>Share this code with friends</span>
+                            <span className={styles.codeHint}>Share link or code with friends</span>
                         </Card>
 
                         {/* Players list */}
@@ -298,6 +322,7 @@ export default function LobbyWaitingRoom() {
                                 {[1, 2, 3].map((num) => {
                                     const player = players.find(p => p.player_number === num);
                                     const isMe = player?.id === localPlayer?.id;
+                                    const canKick = isHost && player && !isMe && player.player_number !== 1;
 
                                     return (
                                         <div
@@ -315,17 +340,29 @@ export default function LobbyWaitingRoom() {
                                                 <span className={styles.playerName}>
                                                     {player ? player.nickname : 'Waiting...'}
                                                     {isMe && <span className={styles.youBadge}>You</span>}
+                                                    {player?.player_number === 1 && <span className={styles.hostBadge}>Host</span>}
                                                 </span>
                                                 <span className={styles.playerStatus}>
                                                     Player {num} • {num === 1 ? '2' : '3'} takeovers
                                                 </span>
                                             </div>
 
-                                            {player && (
-                                                <span className={`${styles.readyBadge} ${player.is_ready ? styles.ready : ''}`}>
-                                                    {player.is_ready ? '✓ Ready' : 'Not Ready'}
-                                                </span>
-                                            )}
+                                            <div className={styles.playerActions}>
+                                                {player && (
+                                                    <span className={`${styles.readyBadge} ${player.is_ready ? styles.ready : ''}`}>
+                                                        {player.is_ready ? '✓ Ready' : 'Not Ready'}
+                                                    </span>
+                                                )}
+                                                {canKick && (
+                                                    <button
+                                                        className={styles.kickBtn}
+                                                        onClick={() => handleKick(player.id)}
+                                                        title="Remove player"
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     );
                                 })}
