@@ -1,4 +1,4 @@
-// Create Lobby Page
+// Create Lobby Page with Settings
 
 'use client';
 
@@ -14,6 +14,12 @@ export default function CreateLobbyPage() {
     const [nickname, setNickname] = useState('');
     const [isCreating, setIsCreating] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Lobby settings
+    const [isPublic, setIsPublic] = useState(false);
+    const [maxPlayers, setMaxPlayers] = useState<2 | 3>(3);
+    const [defaultTakeovers, setDefaultTakeovers] = useState(5);
+    const [showAdvanced, setShowAdvanced] = useState(false);
 
     useEffect(() => {
         const savedTheme = localStorage.getItem('ttt-theme') as 'dark' | 'light' || 'dark';
@@ -45,8 +51,7 @@ export default function CreateLobbyPage() {
         setError(null);
 
         try {
-            // Dynamic import to avoid build-time initialization
-            const { createLobby, joinLobby, isSupabaseConfigured } = await import('@/lib/supabase');
+            const { createLobbyWithSettings, joinLobby, isSupabaseConfigured } = await import('@/lib/supabase');
 
             if (!isSupabaseConfigured()) {
                 setError('Supabase is not configured. Please set up environment variables.');
@@ -54,8 +59,12 @@ export default function CreateLobbyPage() {
                 return;
             }
 
-            // Create lobby
-            const { lobby, error: createError } = await createLobby();
+            // Create lobby with settings
+            const { lobby, error: createError } = await createLobbyWithSettings({
+                isPublic,
+                maxPlayers,
+                defaultTakeovers,
+            });
 
             if (createError || !lobby) {
                 setError(createError || 'Failed to create lobby');
@@ -72,10 +81,64 @@ export default function CreateLobbyPage() {
                 return;
             }
 
-            // Navigate to lobby waiting room
             router.push(`/lobby/${lobby.code}`);
         } catch (err) {
             console.error('Error creating lobby:', err);
+            setError('An unexpected error occurred');
+            setIsCreating(false);
+        }
+    }, [nickname, isPublic, maxPlayers, defaultTakeovers, router]);
+
+    // Quick Play - find or create public lobby
+    const handleQuickPlay = useCallback(async () => {
+        if (!nickname.trim()) {
+            setError('Please enter a nickname');
+            return;
+        }
+
+        setIsCreating(true);
+        setError(null);
+
+        try {
+            const { findPublicLobby, createLobbyWithSettings, joinLobby, isSupabaseConfigured } = await import('@/lib/supabase');
+
+            if (!isSupabaseConfigured()) {
+                setError('Supabase is not configured.');
+                setIsCreating(false);
+                return;
+            }
+
+            // Try to find existing public lobby
+            let lobby = await findPublicLobby();
+
+            if (!lobby) {
+                // Create a new public lobby
+                const { lobby: newLobby, error: createError } = await createLobbyWithSettings({
+                    isPublic: true,
+                    maxPlayers: 2,
+                    defaultTakeovers: 5,
+                });
+
+                if (createError || !newLobby) {
+                    setError(createError || 'Failed to create lobby');
+                    setIsCreating(false);
+                    return;
+                }
+                lobby = newLobby;
+            }
+
+            // Join the lobby
+            const { player, error: joinError } = await joinLobby(lobby.code, nickname.trim());
+
+            if (joinError || !player) {
+                setError(joinError || 'Failed to join lobby');
+                setIsCreating(false);
+                return;
+            }
+
+            router.push(`/lobby/${lobby.code}`);
+        } catch (err) {
+            console.error('Error with quick play:', err);
             setError('An unexpected error occurred');
             setIsCreating(false);
         }
@@ -83,7 +146,6 @@ export default function CreateLobbyPage() {
 
     return (
         <div className={styles.container}>
-            {/* Header */}
             <header className={styles.header}>
                 <Link href="/" className={styles.backLink}>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -92,19 +154,18 @@ export default function CreateLobbyPage() {
                     Back
                 </Link>
 
-                <h1 className={styles.headerTitle}>Create Lobby</h1>
+                <h1 className={styles.headerTitle}>Create Game</h1>
 
                 <ThemeToggle theme={theme} onToggle={toggleTheme} />
             </header>
 
-            {/* Content */}
             <main className={styles.main}>
                 <Card padding="lg" className={styles.card}>
                     <div className={styles.icon}>🎮</div>
 
                     <h2>Create a New Game</h2>
                     <p className={styles.description}>
-                        Create a lobby and invite friends to join with the code.
+                        Set up your game and invite friends to play.
                     </p>
 
                     <div className={styles.form}>
@@ -117,11 +178,71 @@ export default function CreateLobbyPage() {
                             fullWidth
                         />
 
-                        {error && (
-                            <div className={styles.error}>
-                                {error}
+                        {/* Quick settings */}
+                        <div className={styles.settingRow}>
+                            <label>Players</label>
+                            <div className={styles.optionButtons}>
+                                <button
+                                    className={`${styles.optionBtn} ${maxPlayers === 2 ? styles.active : ''}`}
+                                    onClick={() => setMaxPlayers(2)}
+                                >
+                                    2
+                                </button>
+                                <button
+                                    className={`${styles.optionBtn} ${maxPlayers === 3 ? styles.active : ''}`}
+                                    onClick={() => setMaxPlayers(3)}
+                                >
+                                    3
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className={styles.settingRow}>
+                            <label>Visibility</label>
+                            <div className={styles.optionButtons}>
+                                <button
+                                    className={`${styles.optionBtn} ${!isPublic ? styles.active : ''}`}
+                                    onClick={() => setIsPublic(false)}
+                                >
+                                    🔒 Private
+                                </button>
+                                <button
+                                    className={`${styles.optionBtn} ${isPublic ? styles.active : ''}`}
+                                    onClick={() => setIsPublic(true)}
+                                >
+                                    🌐 Public
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Advanced settings toggle */}
+                        <button
+                            className={styles.advancedToggle}
+                            onClick={() => setShowAdvanced(!showAdvanced)}
+                        >
+                            {showAdvanced ? '▲' : '▼'} Advanced Settings
+                        </button>
+
+                        {showAdvanced && (
+                            <div className={styles.advancedSettings}>
+                                <div className={styles.settingRow}>
+                                    <label>Takeovers per Player</label>
+                                    <div className={styles.optionButtons}>
+                                        {[3, 5, 7, 10].map(n => (
+                                            <button
+                                                key={n}
+                                                className={`${styles.optionBtn} ${defaultTakeovers === n ? styles.active : ''}`}
+                                                onClick={() => setDefaultTakeovers(n)}
+                                            >
+                                                {n}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
                         )}
+
+                        {error && <div className={styles.error}>{error}</div>}
 
                         <Button
                             variant="primary"
@@ -139,9 +260,18 @@ export default function CreateLobbyPage() {
                         <span>or</span>
                     </div>
 
-                    <Link href="/" className={styles.altLink}>
-                        Join an existing lobby
-                    </Link>
+                    <Button
+                        variant="secondary"
+                        size="lg"
+                        fullWidth
+                        disabled={!nickname.trim() || isCreating}
+                        onClick={handleQuickPlay}
+                    >
+                        ⚡ Quick Play
+                    </Button>
+                    <p className={styles.quickPlayHint}>
+                        Instantly join or create a public game
+                    </p>
                 </Card>
             </main>
         </div>

@@ -32,6 +32,7 @@ type PlayerCount = 2 | 3;
 interface GameSettings {
     playerCount: PlayerCount;
     takeoversPer: number;
+    confirmMoves: boolean;
 }
 
 interface LocalGameState {
@@ -40,11 +41,13 @@ interface LocalGameState {
     takeovers: Record<PlayerNumber, number>;
     winner: PlayerNumber | null;
     winningLine: Position[] | null;
+    pendingMove: Position | null;
 }
 
 const DEFAULT_SETTINGS: GameSettings = {
     playerCount: 2,
     takeoversPer: 5,
+    confirmMoves: true,
 };
 
 function createInitialState(settings: GameSettings): LocalGameState {
@@ -60,6 +63,7 @@ function createInitialState(settings: GameSettings): LocalGameState {
         takeovers,
         winner: null,
         winningLine: null,
+        pendingMove: null,
     };
 }
 

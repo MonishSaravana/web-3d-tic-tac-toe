@@ -201,6 +201,9 @@ export default function HomePage() {
       {/* Footer */}
       <footer className={styles.footer}>
         <p>3D T³ — A strategic twist on a classic</p>
+        <p className={styles.credit}>
+          Developed by <a href="https://monishsaravana.com" target="_blank" rel="noopener noreferrer">Monish Saravana</a>
+        </p>
       </footer>
 
       {/* Join Lobby Modal */}

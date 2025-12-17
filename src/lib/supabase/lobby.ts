@@ -10,6 +10,12 @@ export interface DbLobby {
     code: string;
     status: 'waiting' | 'playing' | 'finished';
     max_players: number;
+    is_public?: boolean;
+    time_mode?: 'unlimited' | 'per_move' | 'time_bank';
+    time_per_move?: number;
+    time_bank?: number;
+    default_takeovers?: number;
+    round_number?: number;
     created_at: string;
 }
 
@@ -20,7 +26,11 @@ export interface DbPlayer {
     nickname: string;
     player_number: number | null;
     takeovers_remaining: number;
+    takeovers_setting?: number;
+    time_remaining?: number;
+    confirm_moves?: boolean;
     is_ready: boolean;
+    is_active?: boolean;
 }
 
 export interface DbGame {
@@ -29,6 +39,17 @@ export interface DbGame {
     board: (number | null)[];
     current_turn: number;
     winner: number | null;
+    round_number?: number;
+    status?: 'playing' | 'finished' | 'rematch_pending';
+}
+
+export interface LobbySettings {
+    isPublic?: boolean;
+    maxPlayers?: number;
+    defaultTakeovers?: number;
+    timeMode?: 'unlimited' | 'per_move' | 'time_bank';
+    timePerMove?: number;
+    timeBank?: number;
 }
 
 // Generate a random 6-character lobby code
@@ -390,4 +411,263 @@ export async function closeLobby(lobbyId: string): Promise<void> {
         .from('lobbies')
         .update({ status: 'finished' })
         .eq('id', lobbyId);
+}
+
+// ========== ENHANCED LOBBY FUNCTIONS ==========
+
+// Create lobby with settings
+export async function createLobbyWithSettings(
+    settings: LobbySettings = {}
+): Promise<{ lobby: DbLobby | null; error: string | null }> {
+    let code = generateLobbyCode();
+    let attempts = 0;
+
+    while (attempts < 5) {
+        const { data, error } = await supabase
+            .from('lobbies')
+            .insert({
+                code,
+                status: 'waiting',
+                max_players: settings.maxPlayers ?? 3,
+                is_public: settings.isPublic ?? false,
+                default_takeovers: settings.defaultTakeovers ?? 5,
+                time_mode: settings.timeMode ?? 'unlimited',
+                time_per_move: settings.timePerMove ?? 30,
+                time_bank: settings.timeBank ?? 120,
+                round_number: 1,
+            })
+            .select()
+            .single();
+
+        if (error) {
+            if (error.code === '23505') {
+                code = generateLobbyCode();
+                attempts++;
+                continue;
+            }
+            return { lobby: null, error: error.message };
+        }
+
+        return { lobby: data, error: null };
+    }
+
+    return { lobby: null, error: 'Failed to generate unique code' };
+}
+
+// Find a public lobby for Quick Play
+export async function findPublicLobby(): Promise<DbLobby | null> {
+    const { data } = await supabase
+        .from('lobbies')
+        .select('*')
+        .eq('is_public', true)
+        .eq('status', 'waiting')
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .single();
+
+    return data;
+}
+
+// Join a game mid-progress (if slot available)
+export async function joinMidGame(
+    code: string,
+    nickname: string
+): Promise<{ player: DbPlayer | null; lobby: DbLobby | null; error: string | null }> {
+    const sessionId = getSessionId();
+
+    // Find lobby
+    const { data: lobby } = await supabase
+        .from('lobbies')
+        .select('*')
+        .eq('code', code.toUpperCase())
+        .single();
+
+    if (!lobby) {
+        return { player: null, lobby: null, error: 'Lobby not found' };
+    }
+
+    // Check if already in lobby
+    const { data: existingPlayer } = await supabase
+        .from('players')
+        .select('*')
+        .eq('lobby_id', lobby.id)
+        .eq('session_id', sessionId)
+        .single();
+
+    if (existingPlayer) {
+        return { player: existingPlayer, lobby, error: null };
+    }
+
+    // Get current players
+    const { data: players } = await supabase
+        .from('players')
+        .select('player_number')
+        .eq('lobby_id', lobby.id);
+
+    const usedNumbers = new Set((players ?? []).map(p => p.player_number));
+
+    // Find empty slot
+    let availableSlot: number | null = null;
+    for (let i = 1; i <= lobby.max_players; i++) {
+        if (!usedNumbers.has(i)) {
+            availableSlot = i;
+            break;
+        }
+    }
+
+    if (!availableSlot) {
+        return { player: null, lobby: null, error: 'Lobby is full' };
+    }
+
+    // Join with available slot
+    const takeovers = lobby.default_takeovers ?? 5;
+
+    const { data: player, error: playerError } = await supabase
+        .from('players')
+        .insert({
+            lobby_id: lobby.id,
+            session_id: sessionId,
+            nickname,
+            player_number: availableSlot,
+            takeovers_remaining: takeovers,
+            takeovers_setting: takeovers,
+            is_ready: lobby.status === 'playing',
+            is_active: true,
+            confirm_moves: true,
+            time_remaining: lobby.time_bank ?? 120,
+        })
+        .select()
+        .single();
+
+    if (playerError) {
+        return { player: null, lobby: null, error: playerError.message };
+    }
+
+    return { player, lobby, error: null };
+}
+
+// Request rematch (set player ready for next game)
+export async function requestRematch(playerId: string): Promise<void> {
+    await supabase
+        .from('players')
+        .update({ is_ready: true })
+        .eq('id', playerId);
+}
+
+// Start next game in series (rematch)
+export async function startRematch(lobbyId: string): Promise<DbGame | null> {
+    // Get lobby and current round
+    const { data: lobby } = await supabase
+        .from('lobbies')
+        .select('*')
+        .eq('id', lobbyId)
+        .single();
+
+    if (!lobby) return null;
+
+    const nextRound = (lobby.round_number ?? 1) + 1;
+
+    // Update lobby
+    await supabase
+        .from('lobbies')
+        .update({
+            status: 'playing',
+            round_number: nextRound
+        })
+        .eq('id', lobbyId);
+
+    // Reset players for new game
+    const { data: players } = await supabase
+        .from('players')
+        .select('*')
+        .eq('lobby_id', lobbyId);
+
+    for (const player of (players ?? [])) {
+        await supabase
+            .from('players')
+            .update({
+                takeovers_remaining: player.takeovers_setting ?? lobby.default_takeovers ?? 5,
+                is_ready: false,
+                time_remaining: lobby.time_bank ?? 120,
+            })
+            .eq('id', player.id);
+    }
+
+    // Create new game
+    const emptyBoard = Array(27).fill(null);
+    const { data: game } = await supabase
+        .from('games')
+        .insert({
+            lobby_id: lobbyId,
+            board: emptyBoard,
+            current_turn: 1,
+            winner: null,
+            round_number: nextRound,
+            status: 'playing',
+        })
+        .select()
+        .single();
+
+    return game;
+}
+
+// Update player settings (takeovers, confirm moves, etc.)
+export async function updatePlayerSettings(
+    playerId: string,
+    settings: { takeovers?: number; confirmMoves?: boolean }
+): Promise<void> {
+    const updates: any = {};
+    if (settings.takeovers !== undefined) {
+        updates.takeovers_setting = settings.takeovers;
+        updates.takeovers_remaining = settings.takeovers;
+    }
+    if (settings.confirmMoves !== undefined) {
+        updates.confirm_moves = settings.confirmMoves;
+    }
+
+    await supabase
+        .from('players')
+        .update(updates)
+        .eq('id', playerId);
+}
+
+// Update lobby settings (between games)
+export async function updateLobbySettings(
+    lobbyId: string,
+    settings: LobbySettings
+): Promise<void> {
+    const updates: any = {};
+    if (settings.defaultTakeovers !== undefined) updates.default_takeovers = settings.defaultTakeovers;
+    if (settings.timeMode !== undefined) updates.time_mode = settings.timeMode;
+    if (settings.timePerMove !== undefined) updates.time_per_move = settings.timePerMove;
+    if (settings.timeBank !== undefined) updates.time_bank = settings.timeBank;
+    if (settings.maxPlayers !== undefined) updates.max_players = settings.maxPlayers;
+    if (settings.isPublic !== undefined) updates.is_public = settings.isPublic;
+
+    await supabase
+        .from('lobbies')
+        .update(updates)
+        .eq('id', lobbyId);
+}
+
+// Mark game as finished
+export async function finishGame(gameId: string, winnerId: number | null): Promise<void> {
+    await supabase
+        .from('games')
+        .update({
+            winner: winnerId,
+            status: 'finished'
+        })
+        .eq('id', gameId);
+}
+
+// Helper to get number of active players
+export async function getActivePlayerCount(lobbyId: string): Promise<number> {
+    const { count } = await supabase
+        .from('players')
+        .select('*', { count: 'exact', head: true })
+        .eq('lobby_id', lobbyId)
+        .eq('is_active', true);
+
+    return count ?? 0;
 }
