@@ -30,6 +30,12 @@ export default function RootLayout({
       <head>
         <meta name="theme-color" content="#0a0a0a" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
+        {/* Google AdSense */}
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2576947283789645"
+          crossOrigin="anonymous"
+        />
       </head>
       <body className={inter.variable}>
         {children}
