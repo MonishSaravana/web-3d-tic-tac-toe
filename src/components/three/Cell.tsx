@@ -1,11 +1,12 @@
 // 3D Cell Component
 // Individual cell in the 3x3x3 grid with hover and click interaction
+// No visible outline by default - only shows on hover/selection
 
 'use client';
 
 import React, { useRef, useState, useCallback } from 'react';
 import { useFrame, ThreeEvent } from '@react-three/fiber';
-import { Mesh, BoxGeometry, EdgesGeometry, LineSegments } from 'three';
+import { Mesh } from 'three';
 import { Position } from '@/lib/game/types';
 
 interface CellProps {
@@ -34,30 +35,10 @@ export function Cell({
     onClick,
 }: CellProps) {
     const meshRef = useRef<Mesh>(null);
-    const edgesRef = useRef<LineSegments>(null);
     const [localHover, setLocalHover] = useState(false);
 
-    const cellSize = 1;
-    const padding = 0.05;
-    const innerSize = cellSize - padding * 2;
-
-    // Determine cell appearance based on state
-    const getColor = () => {
-        if (isWinningCell) return 'rgba(34, 197, 94, 0.3)'; // green
-        if (isSelected) return 'rgba(255, 255, 255, 0.2)';
-        if (isTakeoverTarget && isHovered) return 'rgba(239, 68, 68, 0.2)'; // red
-        if (isHovered && isEmpty) return 'rgba(255, 255, 255, 0.1)';
-        return 'transparent';
-    };
-
-    const getEdgeColor = () => {
-        if (isWinningCell) return '#22c55e';
-        if (isSelected) return '#ffffff';
-        if (isTakeoverTarget && isHovered) return '#ef4444';
-        if (isHovered && isValidTarget) return '#ffffff';
-        if (localHover && isValidTarget) return 'rgba(255, 255, 255, 0.5)';
-        return 'rgba(255, 255, 255, 0.1)';
-    };
+    const cellSize = 1.1; // Slightly larger for easier clicking
+    const visualSize = 0.9; // Visual size for hover effect
 
     const handlePointerEnter = useCallback((e: ThreeEvent<PointerEvent>) => {
         e.stopPropagation();
@@ -88,35 +69,39 @@ export function Cell({
         }
     });
 
-    const shouldShowFill = isHovered || isSelected || isWinningCell;
-    const opacity = isEmpty ? 0.8 : 0.4;
+    // Only show visual effect when hovered, selected, or winning
+    const shouldShowVisual = isHovered || isSelected || isWinningCell || (localHover && isValidTarget);
+
+    // Determine color based on state
+    const getColor = () => {
+        if (isWinningCell) return '#22c55e';
+        if (isTakeoverTarget && isHovered) return '#ef4444';
+        return '#ffffff';
+    };
+
+    const getOpacity = () => {
+        if (isWinningCell) return 0.25;
+        if (isSelected) return 0.15;
+        if (isHovered) return 0.12;
+        if (localHover) return 0.08;
+        return 0;
+    };
 
     return (
         <group position={worldPosition}>
-            {/* Cell fill (shown on hover/select/win) */}
-            {shouldShowFill && (
+            {/* Translucent fill shown only on hover/select/win */}
+            {shouldShowVisual && (
                 <mesh ref={meshRef}>
-                    <boxGeometry args={[innerSize, innerSize, innerSize]} />
+                    <boxGeometry args={[visualSize, visualSize, visualSize]} />
                     <meshBasicMaterial
-                        color={isWinningCell ? '#22c55e' : isTakeoverTarget ? '#ef4444' : '#ffffff'}
+                        color={getColor()}
                         transparent
-                        opacity={isWinningCell ? 0.2 : 0.08}
+                        opacity={getOpacity()}
                     />
                 </mesh>
             )}
 
-            {/* Cell edges/wireframe */}
-            <lineSegments>
-                <edgesGeometry args={[new BoxGeometry(innerSize, innerSize, innerSize)]} />
-                <lineBasicMaterial
-                    color={getEdgeColor()}
-                    transparent
-                    opacity={opacity}
-                    linewidth={1}
-                />
-            </lineSegments>
-
-            {/* Invisible hitbox for interaction */}
+            {/* Invisible hitbox for interaction - always present */}
             <mesh
                 visible={false}
                 onPointerEnter={handlePointerEnter}
@@ -130,71 +115,92 @@ export function Cell({
     );
 }
 
-// Grid lines connecting cells
-interface GridLinesProps {
+// Classic 3D Tic-Tac-Toe Grid Lines
+// Just the dividing lines like a "#" shape extended into 3D
+interface TicTacToeGridProps {
     spacing: number;
-    size: number;
+    lineThickness?: number;
 }
 
-export function GridLines({ spacing, size }: GridLinesProps) {
-    const halfSize = (size * spacing) / 2 - spacing / 2;
+export function TicTacToeGrid({ spacing, lineThickness = 0.03 }: TicTacToeGridProps) {
+    // Grid dimensions
+    const totalSize = spacing * 3;
+    const halfTotal = totalSize / 2;
 
-    // Generate all line segments
-    const lineSegments: Array<{ key: string; start: [number, number, number]; end: [number, number, number] }> = [];
+    // Line positions (at 1/3 and 2/3 of the grid)
+    const linePos1 = -spacing / 2;
+    const linePos2 = spacing / 2;
 
-    // Vertical pillars
-    for (let x = 0; x <= size; x++) {
-        for (let z = 0; z <= size; z++) {
-            const xPos = x * spacing - halfSize - spacing / 2;
-            const zPos = z * spacing - halfSize - spacing / 2;
-            lineSegments.push({
-                key: `pillar-${x}-${z}`,
-                start: [xPos, -halfSize - spacing / 2, zPos],
-                end: [xPos, halfSize + spacing / 2, zPos],
+    // Create cylinder-based lines for better visibility
+    const lines: Array<{
+        key: string;
+        position: [number, number, number];
+        rotation: [number, number, number];
+        length: number;
+    }> = [];
+
+    // Vertical pillars (Y-axis) - 4 pillars at the internal intersections
+    const pillarPositions = [
+        [linePos1, linePos1],
+        [linePos1, linePos2],
+        [linePos2, linePos1],
+        [linePos2, linePos2],
+    ];
+
+    for (const [x, z] of pillarPositions) {
+        lines.push({
+            key: `pillar-${x}-${z}`,
+            position: [x, 0, z],
+            rotation: [0, 0, 0],
+            length: totalSize,
+        });
+    }
+
+    // Horizontal lines along X-axis (at each y level, 2 lines per level)
+    for (let yIdx = -1; yIdx <= 1; yIdx++) {
+        const y = yIdx * spacing;
+        // Lines at z = linePos1 and z = linePos2
+        for (const z of [linePos1, linePos2]) {
+            lines.push({
+                key: `x-line-${yIdx}-${z}`,
+                position: [0, y, z],
+                rotation: [0, 0, Math.PI / 2],
+                length: totalSize,
             });
         }
     }
 
-    // X-axis lines
-    for (let y = 0; y <= size; y++) {
-        for (let z = 0; z <= size; z++) {
-            const yPos = y * spacing - halfSize - spacing / 2;
-            const zPos = z * spacing - halfSize - spacing / 2;
-            lineSegments.push({
-                key: `x-${y}-${z}`,
-                start: [-halfSize - spacing / 2, yPos, zPos],
-                end: [halfSize + spacing / 2, yPos, zPos],
-            });
-        }
-    }
-
-    // Z-axis lines
-    for (let y = 0; y <= size; y++) {
-        for (let x = 0; x <= size; x++) {
-            const yPos = y * spacing - halfSize - spacing / 2;
-            const xPos = x * spacing - halfSize - spacing / 2;
-            lineSegments.push({
-                key: `z-${y}-${x}`,
-                start: [xPos, yPos, -halfSize - spacing / 2],
-                end: [xPos, yPos, halfSize + spacing / 2],
+    // Horizontal lines along Z-axis (at each y level, 2 lines per level)
+    for (let yIdx = -1; yIdx <= 1; yIdx++) {
+        const y = yIdx * spacing;
+        // Lines at x = linePos1 and x = linePos2
+        for (const x of [linePos1, linePos2]) {
+            lines.push({
+                key: `z-line-${yIdx}-${x}`,
+                position: [x, y, 0],
+                rotation: [Math.PI / 2, 0, 0],
+                length: totalSize,
             });
         }
     }
 
     return (
         <group>
-            {lineSegments.map(({ key, start, end }) => (
-                <line key={key}>
-                    <bufferGeometry>
-                        <float32BufferAttribute
-                            attach="attributes-position"
-                            args={[new Float32Array([...start, ...end]), 3]}
-                        />
-                    </bufferGeometry>
-                    <lineBasicMaterial color="white" transparent opacity={0.06} />
-                </line>
+            {lines.map(({ key, position, rotation, length }) => (
+                <mesh key={key} position={position} rotation={rotation}>
+                    <cylinderGeometry args={[lineThickness, lineThickness, length, 8]} />
+                    <meshStandardMaterial
+                        color="#888888"
+                        metalness={0.3}
+                        roughness={0.7}
+                    />
+                </mesh>
             ))}
         </group>
     );
 }
 
+// Keep the old GridLines for backwards compatibility but mark as deprecated
+export function GridLines({ spacing, size }: { spacing: number; size: number }) {
+    return <TicTacToeGrid spacing={spacing} />;
+}

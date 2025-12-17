@@ -1,0 +1,254 @@
+/* Lobby Waiting Room Styles */
+
+.container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-primary);
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-md) var(--space-xl);
+    border-bottom: 1px solid var(--border-subtle);
+    background: var(--bg-secondary);
+}
+
+.backLink {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    color: var(--text-secondary);
+    font-weight: 500;
+    transition: color var(--transition-fast);
+}
+
+.backLink:hover {
+    color: var(--text-primary);
+}
+
+.headerTitle {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-xl);
+}
+
+/* Join Card */
+.joinCard {
+    max-width: 400px;
+    width: 100%;
+    text-align: center;
+}
+
+.joinCard h2 {
+    margin-bottom: var(--space-sm);
+    color: var(--text-primary);
+}
+
+.lobbyCodeDisplay {
+    color: var(--text-secondary);
+    margin-bottom: var(--space-xl);
+}
+
+.lobbyCodeDisplay strong {
+    color: var(--text-primary);
+    font-size: 1.25rem;
+    letter-spacing: 0.1em;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    text-align: left;
+}
+
+.error {
+    padding: var(--space-sm) var(--space-md);
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: var(--radius-md);
+    color: var(--error);
+    font-size: 0.875rem;
+}
+
+/* Error Card */
+.errorCard {
+    max-width: 400px;
+    width: 100%;
+    text-align: center;
+}
+
+.errorIcon {
+    font-size: 3rem;
+    margin-bottom: var(--space-md);
+}
+
+.errorCard h2 {
+    margin-bottom: var(--space-sm);
+    color: var(--text-primary);
+}
+
+.errorCard p {
+    margin-bottom: var(--space-xl);
+}
+
+/* Waiting Room */
+.waitingRoom {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+    max-width: 500px;
+    width: 100%;
+}
+
+/* Code Card */
+.codeCard {
+    text-align: center;
+}
+
+.codeLabel {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+}
+
+.codeRow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-md);
+    margin: var(--space-sm) 0;
+}
+
+.code {
+    font-size: 2rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    letter-spacing: 0.2em;
+    color: var(--text-primary);
+}
+
+.codeHint {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* Players Card */
+.playersCard h3 {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--space-md);
+}
+
+.playersList {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.playerSlot {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md);
+    background: var(--bg-primary);
+    border: 1px dashed var(--border-subtle);
+    border-radius: var(--radius-md);
+    opacity: 0.5;
+    transition: all var(--transition-fast);
+}
+
+.playerSlot.filled {
+    opacity: 1;
+    border-style: solid;
+    border-color: var(--border-strong);
+}
+
+.playerSlot.isMe {
+    border-color: var(--text-primary);
+    background: var(--bg-elevated);
+}
+
+.playerIcon {
+    font-size: 1.5rem;
+}
+
+.playerInfo {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.playerName {
+    font-weight: 500;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+}
+
+.youBadge {
+    font-size: 0.625rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    background: var(--accent-dim);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+}
+
+.playerStatus {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.readyBadge {
+    font-size: 0.75rem;
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    background: var(--bg-secondary);
+    color: var(--text-muted);
+}
+
+.readyBadge.ready {
+    background: rgba(34, 197, 94, 0.2);
+    color: var(--success);
+}
+
+/* Actions */
+.actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    text-align: center;
+}
+
+.waitingText {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}

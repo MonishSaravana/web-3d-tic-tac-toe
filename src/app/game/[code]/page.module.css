@@ -1,0 +1,160 @@
+/* Online Game Page Styles */
+
+.container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-primary);
+}
+
+/* Header */
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-md) var(--space-xl);
+    border-bottom: 1px solid var(--border-subtle);
+    background: var(--bg-secondary);
+}
+
+.headerLeft {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+.lobbyCode {
+    font-size: 0.875rem;
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+}
+
+.headerCenter {
+    display: flex;
+    align-items: center;
+}
+
+.yourTurn {
+    font-weight: 600;
+    color: var(--success);
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Main */
+.main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-lg);
+}
+
+.gameArea {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: var(--space-xl);
+    width: 100%;
+    max-width: 1200px;
+    align-items: start;
+}
+
+/* Board */
+.boardContainer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.boardContainer>div:first-child {
+    aspect-ratio: 1;
+    max-height: 70vh;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--border-subtle);
+    overflow: hidden;
+}
+
+.boardLoading {
+    width: 100%;
+    height: 100%;
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-md);
+    color: var(--text-muted);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-xl);
+}
+
+.spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--border-subtle);
+    border-top-color: var(--text-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+.controlsHint {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-lg);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* HUD */
+.hudContainer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    position: sticky;
+    top: var(--space-lg);
+}
+
+/* Loading/Error states */
+.loadingMain,
+.errorMain {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-md);
+    color: var(--text-secondary);
+}
+
+.errorMain h2 {
+    color: var(--text-primary);
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .gameArea {
+        grid-template-columns: 1fr;
+    }
+
+    .hudContainer {
+        position: static;
+    }
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+}

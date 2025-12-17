@@ -77,9 +77,9 @@ export interface PieceConfig {
 }
 
 export const DEFAULT_PIECES: Record<PlayerNumber, PieceConfig> = {
-    1: { type: 'sphere', color: '#ffffff', emissive: '#222222' },
-    2: { type: 'cube', color: '#888888', emissive: '#111111' },
-    3: { type: 'octahedron', color: '#444444', emissive: '#080808' },
+    1: { type: 'sphere', color: '#ef4444', emissive: '#7f1d1d' },      // Red
+    2: { type: 'cube', color: '#22c55e', emissive: '#14532d' },        // Green  
+    3: { type: 'octahedron', color: '#3b82f6', emissive: '#1e3a8a' },  // Blue
 };
 
 // Utility to convert flat index to 3D position
