@@ -1,0 +1,46 @@
+/* Card Component Styles */
+
+.card {
+    border-radius: var(--radius-lg);
+    transition: all var(--transition-normal);
+}
+
+/* Variants */
+.default {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+}
+
+.elevated {
+    background: var(--bg-elevated);
+    box-shadow: var(--shadow-md);
+}
+
+.outlined {
+    background: transparent;
+    border: 1px solid var(--border-strong);
+}
+
+/* Padding */
+.padding-none {
+    padding: 0;
+}
+
+.padding-sm {
+    padding: var(--space-md);
+}
+
+.padding-md {
+    padding: var(--space-lg);
+}
+
+.padding-lg {
+    padding: var(--space-xl);
+}
+
+/* Hover effect */
+.hover:hover {
+    border-color: var(--border-strong);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}

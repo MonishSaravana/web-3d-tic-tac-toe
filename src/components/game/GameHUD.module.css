@@ -1,0 +1,239 @@
+/* Game HUD Styles */
+
+.hud {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+    padding: var(--space-lg);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-subtle);
+    min-width: 280px;
+}
+
+/* Status */
+.status {
+    text-align: center;
+}
+
+.turnIndicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    font-size: 1.125rem;
+    color: var(--text-secondary);
+}
+
+.turnIcon {
+    font-size: 1.5rem;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.winnerBanner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    padding: var(--space-md);
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.1));
+    border-radius: var(--radius-md);
+    font-size: 1.25rem;
+    color: var(--success);
+}
+
+.winnerIcon {
+    font-size: 1.75rem;
+}
+
+/* Players */
+.players {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.playerCard {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-md);
+    background: var(--bg-primary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+    transition: all var(--transition-fast);
+}
+
+.playerCard.active {
+    border-color: var(--text-primary);
+    background: var(--bg-elevated);
+}
+
+.playerCard.local {
+    border-color: var(--text-secondary);
+}
+
+.playerCard.active.local {
+    border-color: var(--text-primary);
+    box-shadow: 0 0 0 1px var(--text-primary);
+}
+
+.playerHeader {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.pieceIcon {
+    font-size: 1.25rem;
+}
+
+.playerName {
+    font-weight: 500;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+}
+
+.youBadge {
+    font-size: 0.625rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    background: var(--accent-dim);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+}
+
+.playerStats {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+.takeovers {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.takeoverIcon {
+    font-size: 0.75rem;
+}
+
+/* Controls */
+.controls {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.takeoverHint {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-align: center;
+    line-height: 1.4;
+}
+
+.takeoverHint small {
+    color: var(--error);
+}
+
+/* Game over */
+.gameOverActions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+/* Win overlay */
+.winOverlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    z-index: 100;
+    animation: fadeIn var(--transition-normal) ease-out;
+    cursor: pointer;
+}
+
+.winContent {
+    text-align: center;
+    padding: var(--space-3xl);
+    animation: scaleIn var(--transition-slow) ease-out;
+}
+
+.winEmoji {
+    font-size: 5rem;
+    margin-bottom: var(--space-lg);
+    animation: float 2s ease-in-out infinite;
+}
+
+.winTitle {
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--space-sm);
+}
+
+.winSubtitle {
+    font-size: 1.25rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--space-xl);
+}
+
+.winnerPiece {
+    font-size: 4rem;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
