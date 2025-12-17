@@ -26,6 +26,7 @@
     gap: var(--space-sm);
     color: var(--text-secondary);
     font-weight: 500;
+    font-size: 0.875rem;
     transition: color var(--transition-fast);
 }
 
@@ -33,10 +34,14 @@
     color: var(--text-primary);
 }
 
-.headerTitle {
-    font-size: 1.25rem;
-    font-weight: 600;
+.logo {
+    font-size: 1.5rem;
+    font-weight: 700;
     color: var(--text-primary);
+}
+
+.logo sup {
+    font-size: 0.6em;
 }
 
 /* Main */
@@ -46,8 +51,14 @@
 }
 
 .content {
-    max-width: 720px;
+    max-width: 800px;
     margin: 0 auto;
+}
+
+.content h1 {
+    font-size: 2.5rem;
+    text-align: center;
+    margin-bottom: var(--space-3xl);
 }
 
 /* Sections */
@@ -75,15 +86,89 @@
     margin-bottom: var(--space-md);
 }
 
-.list {
-    color: var(--text-secondary);
-    line-height: 1.7;
-    padding-left: var(--space-xl);
+/* Winning Lines Grid */
+.lineGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+}
+
+.lineCard {
+    text-align: center;
+}
+
+.lineCount {
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.lineType {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+}
+
+.lineDesc {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* Diagram */
+.diagram {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    border: 1px solid var(--border-subtle);
+}
+
+.diagramGrid {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-xl);
     margin-bottom: var(--space-md);
 }
 
-.list li {
+.layer {
+    text-align: center;
+}
+
+.layerLabel {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-muted);
     margin-bottom: var(--space-sm);
+}
+
+.miniGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 24px);
+    gap: 4px;
+}
+
+.cell {
+    width: 24px;
+    height: 24px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+}
+
+.cell.center {
+    background: var(--success);
+    border-color: var(--success);
+}
+
+.diagramCaption {
+    text-align: center;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0;
 }
 
 /* Players Grid */
@@ -93,7 +178,7 @@
     gap: var(--space-md);
 }
 
-.playerInfo {
+.playerCard {
     display: flex;
     align-items: center;
     gap: var(--space-md);
@@ -103,34 +188,96 @@
     font-size: 2rem;
 }
 
-.playerInfo div {
+.playerCard div {
     display: flex;
     flex-direction: column;
 }
 
-.playerInfo strong {
+.playerCard strong {
     color: var(--text-primary);
     margin-bottom: 2px;
 }
 
-.playerInfo span {
+.playerCard span:not(.pieceIcon) {
     font-size: 0.75rem;
     color: var(--text-muted);
 }
 
-/* Highlight Card */
-.highlightCard {
+/* Takeover Card */
+.takeoverCard {
     background: var(--bg-secondary);
 }
 
-.important {
-    color: var(--error) !important;
-    font-weight: 500;
+.takeoverCard h3 {
+    margin-bottom: var(--space-sm);
 }
 
-.important small {
-    font-weight: 400;
+.takeoverRules {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    margin: var(--space-lg) 0;
+}
+
+.ruleItem {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-sm);
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.ruleItem .ruleIcon {
+    flex-shrink: 0;
+    font-size: 1rem;
+}
+
+.ruleItem.warning {
+    background: rgba(239, 68, 68, 0.1);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.takeoverExample {
+    background: var(--bg-elevated);
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    margin-top: var(--space-lg);
+}
+
+.takeoverExample h4 {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--space-md);
+}
+
+.exampleRow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-md);
+}
+
+.exampleCell {
+    display: flex;
+    gap: var(--space-sm);
+    font-size: 1.5rem;
+    padding: var(--space-sm) var(--space-md);
+    background: var(--bg-primary);
+    border-radius: var(--radius-md);
+}
+
+.arrow {
+    font-size: 1.5rem;
     color: var(--text-muted);
+}
+
+.takeoverExample p {
+    text-align: center;
+    font-size: 0.875rem;
+    margin-top: var(--space-md);
+    margin-bottom: 0;
 }
 
 /* Controls Grid */
@@ -163,11 +310,33 @@
 
 .control strong {
     color: var(--text-primary);
+    font-size: 0.9rem;
     margin-bottom: 2px;
 }
 
-.control span {
+.control span:not(.controlIcon) {
     font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* Tips */
+.tips {
+    list-style: none;
+    padding: 0;
+}
+
+.tips li {
+    color: var(--text-secondary);
+    line-height: 1.7;
+    padding: var(--space-sm) 0;
+    padding-left: var(--space-lg);
+    position: relative;
+}
+
+.tips li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
     color: var(--text-muted);
 }
 
@@ -194,11 +363,20 @@
 
 /* Responsive */
 @media (max-width: 768px) {
+    .lineGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
     .playersGrid {
         grid-template-columns: 1fr;
     }
 
     .controlsGrid {
         grid-template-columns: 1fr;
+    }
+
+    .diagramGrid {
+        flex-direction: column;
+        align-items: center;
     }
 }

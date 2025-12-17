@@ -18,14 +18,14 @@
   --bg-secondary: #111111;
   --bg-elevated: #1a1a1a;
   --bg-hover: #222222;
-  
+
   --text-primary: #ffffff;
   --text-secondary: #a0a0a0;
   --text-muted: #606060;
-  
+
   --border-subtle: #2a2a2a;
   --border-strong: #404040;
-  
+
   /* Player colors - monochrome */
   --player-1: #ffffff;
   --player-1-glow: rgba(255, 255, 255, 0.4);
@@ -33,26 +33,26 @@
   --player-2-glow: rgba(136, 136, 136, 0.4);
   --player-3: #444444;
   --player-3-glow: rgba(68, 68, 68, 0.4);
-  
+
   /* Accent for interactions */
   --accent: #ffffff;
   --accent-dim: rgba(255, 255, 255, 0.1);
   --accent-hover: rgba(255, 255, 255, 0.15);
-  
+
   /* Grid */
   --grid-line: rgba(255, 255, 255, 0.08);
   --grid-highlight: rgba(255, 255, 255, 0.25);
   --grid-cell-hover: rgba(255, 255, 255, 0.1);
-  
+
   /* Status colors */
   --success: #22c55e;
   --warning: #eab308;
   --error: #ef4444;
-  
-  /* Typography */
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
-  
+
+  /* Typography - Using Space Mono for blocky, memorable look */
+  --font-sans: var(--font-mono), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'Space Mono', 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
+
   /* Spacing */
   --space-xs: 0.25rem;
   --space-sm: 0.5rem;
@@ -61,19 +61,19 @@
   --space-xl: 2rem;
   --space-2xl: 3rem;
   --space-3xl: 4rem;
-  
+
   /* Border radius */
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 12px;
   --radius-xl: 16px;
   --radius-full: 9999px;
-  
+
   /* Transitions */
   --transition-fast: 150ms ease;
   --transition-normal: 250ms ease;
   --transition-slow: 400ms ease;
-  
+
   /* Shadows */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
@@ -87,29 +87,29 @@
   --bg-secondary: #f0f0f0;
   --bg-elevated: #ffffff;
   --bg-hover: #e8e8e8;
-  
+
   --text-primary: #0a0a0a;
   --text-secondary: #606060;
   --text-muted: #909090;
-  
+
   --border-subtle: #e0e0e0;
   --border-strong: #c0c0c0;
-  
+
   --player-1: #0a0a0a;
   --player-1-glow: rgba(10, 10, 10, 0.3);
   --player-2: #606060;
   --player-2-glow: rgba(96, 96, 96, 0.3);
   --player-3: #a0a0a0;
   --player-3-glow: rgba(160, 160, 160, 0.3);
-  
+
   --accent: #0a0a0a;
   --accent-dim: rgba(0, 0, 0, 0.05);
   --accent-hover: rgba(0, 0, 0, 0.1);
-  
+
   --grid-line: rgba(0, 0, 0, 0.08);
   --grid-highlight: rgba(0, 0, 0, 0.2);
   --grid-cell-hover: rgba(0, 0, 0, 0.08);
-  
+
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.2);
@@ -133,18 +133,40 @@ body {
 }
 
 /* Typography */
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-weight: 600;
   line-height: 1.2;
   letter-spacing: -0.02em;
 }
 
-h1 { font-size: 2.5rem; }
-h2 { font-size: 2rem; }
-h3 { font-size: 1.5rem; }
-h4 { font-size: 1.25rem; }
-h5 { font-size: 1rem; }
-h6 { font-size: 0.875rem; }
+h1 {
+  font-size: 2.5rem;
+}
+
+h2 {
+  font-size: 2rem;
+}
+
+h3 {
+  font-size: 1.5rem;
+}
+
+h4 {
+  font-size: 1.25rem;
+}
+
+h5 {
+  font-size: 1rem;
+}
+
+h6 {
+  font-size: 0.875rem;
+}
 
 p {
   color: var(--text-secondary);
@@ -184,9 +206,17 @@ a:hover {
   justify-content: center;
 }
 
-.gap-sm { gap: var(--space-sm); }
-.gap-md { gap: var(--space-md); }
-.gap-lg { gap: var(--space-lg); }
+.gap-sm {
+  gap: var(--space-sm);
+}
+
+.gap-md {
+  gap: var(--space-md);
+}
+
+.gap-lg {
+  gap: var(--space-lg);
+}
 
 .text-center {
   text-align: center;
@@ -202,8 +232,13 @@ a:hover {
 
 /* Animation keyframes */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideUp {
@@ -211,6 +246,7 @@ a:hover {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -218,18 +254,37 @@ a:hover {
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
 .animate-fadeIn {

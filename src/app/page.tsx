@@ -1,21 +1,22 @@
-// Home Page - Landing page with 3D interactive demo
+// 3D T³ Home Page
+// Clean design with Local/Online play options and visual how-to-play section
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { Button, Input, Card, Modal, ThemeToggle } from '@/components/ui';
+import { Button, Input, ThemeToggle, Card, Modal } from '@/components/ui';
 import styles from './page.module.css';
 
-// Dynamic import for the 3D board to avoid SSR issues
+// Dynamic import for 3D demo board (no SSR needed for Three.js)
 const DemoBoard = dynamic(
   () => import('@/components/three/GameBoard').then(mod => ({ default: mod.DemoBoard })),
   {
     ssr: false,
     loading: () => (
-      <div className={styles.boardPlaceholder}>
-        <div className={styles.loadingSpinner} />
+      <div className={styles.boardLoading}>
+        <div className={styles.spinner} />
       </div>
     ),
   }
@@ -23,11 +24,10 @@ const DemoBoard = dynamic(
 
 export default function HomePage() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [nickname, setNickname] = useState('');
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [lobbyCode, setLobbyCode] = useState('');
-  const [nickname, setNickname] = useState('');
 
-  // Initialize theme from localStorage
   useEffect(() => {
     const savedTheme = localStorage.getItem('ttt-theme') as 'dark' | 'light' || 'dark';
     const savedNickname = localStorage.getItem('ttt-nickname') || '';
@@ -52,135 +52,181 @@ export default function HomePage() {
     <div className={styles.container}>
       {/* Header */}
       <header className={styles.header}>
-        <div className={styles.logo}>
-          <span className={styles.logoIcon}>◆</span>
-          <span>3D TTT</span>
-        </div>
+        <Link href="/" className={styles.logo}>
+          3D T<sup>3</sup>
+        </Link>
+
         <nav className={styles.nav}>
-          <Link href="/demo" className={styles.navLink}>Demo</Link>
           <Link href="/rules" className={styles.navLink}>Rules</Link>
           <ThemeToggle theme={theme} onToggle={toggleTheme} />
         </nav>
       </header>
 
-      {/* Hero Section */}
       <main className={styles.main}>
-        <div className={styles.hero}>
+        {/* Hero Section */}
+        <section className={styles.hero}>
           <div className={styles.heroContent}>
             <h1 className={styles.title}>
-              3D Tic-Tac-Toe
+              3D T<sup>3</sup>
             </h1>
+            <p className={styles.tagline}>
+              Tic-Tac-Toe in Three Dimensions
+            </p>
             <p className={styles.subtitle}>
-              A multiplayer strategy game on a 3×3×3 grid.
-              <br />
-              Three players. Unique takeover mechanics. Pure strategy.
+              2-3 Players • Strategic Takeovers • 49 Ways to Win
             </p>
 
-            {/* Nickname input */}
-            <div className={styles.nicknameInput}>
+            {/* Nickname Input */}
+            <div className={styles.nicknameRow}>
               <Input
-                placeholder="Enter your nickname"
+                placeholder="Enter nickname"
                 value={nickname}
                 onChange={(e) => handleNicknameChange(e.target.value)}
-                maxLength={20}
+                maxLength={15}
+                className={styles.nicknameInput}
               />
             </div>
 
-            {/* Action buttons */}
-            <div className={styles.actions}>
-              <Link href="/demo">
-                <Button variant="primary" size="lg">
-                  Play Demo
+            {/* Play Buttons */}
+            <div className={styles.playButtons}>
+              <Link href="/local" className={styles.playLink}>
+                <Button variant="primary" size="lg" fullWidth disabled={!nickname.trim()}>
+                  🎮 Local Play
                 </Button>
               </Link>
-              <Button
-                variant="secondary"
-                size="lg"
-                onClick={() => setShowJoinModal(true)}
-              >
-                Join Lobby
-              </Button>
-            </div>
 
-            <div className={styles.actionsDivider}>
-              <span>or</span>
+              <div className={styles.onlineButtons}>
+                <Link href="/lobby/create" className={styles.playLink}>
+                  <Button variant="secondary" size="lg" fullWidth disabled={!nickname.trim()}>
+                    ➕ Create Game
+                  </Button>
+                </Link>
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  fullWidth
+                  disabled={!nickname.trim()}
+                  onClick={() => setShowJoinModal(true)}
+                >
+                  🔗 Join Game
+                </Button>
+              </div>
             </div>
-
-            <Link href="/lobby/create">
-              <Button variant="ghost" size="lg" fullWidth>
-                Create New Lobby
-              </Button>
-            </Link>
           </div>
 
           {/* 3D Demo Board */}
           <div className={styles.heroBoard}>
             <DemoBoard autoRotate />
           </div>
-        </div>
+        </section>
 
-        {/* Features */}
-        <section className={styles.features}>
-          <Card hover padding="lg" className={styles.featureCard}>
-            <div className={styles.featureIcon}>🎮</div>
-            <h3>3 Player Battles</h3>
-            <p>Compete against two opponents in a strategic three-way match.</p>
-          </Card>
+        {/* How to Play Section - Visual & Clear */}
+        <section className={styles.howToPlay}>
+          <h2>What is 3D T³?</h2>
+          <p className={styles.introText}>
+            Classic Tic-Tac-Toe... but in <strong>3 dimensions</strong>. Instead of a flat 3×3 grid,
+            you play on a <strong>3×3×3 cube</strong> — 27 cells stacked in 3 layers!
+          </p>
 
-          <Card hover padding="lg" className={styles.featureCard}>
-            <div className={styles.featureIcon}>⚡</div>
-            <h3>Takeover Mechanic</h3>
-            <p>Use limited takeovers to steal opponent pieces. But be strategic—you can't win with a takeover!</p>
-          </Card>
+          {/* Visual explanation */}
+          <div className={styles.visualExplain}>
+            <div className={styles.gridVisual}>
+              <div className={styles.layerStack}>
+                <div className={styles.visualLayer}>
+                  <span className={styles.layerNum}>3</span>
+                  <div className={styles.miniLayer}>
+                    {[...Array(9)].map((_, i) => <div key={i} className={styles.miniCell} />)}
+                  </div>
+                </div>
+                <div className={styles.visualLayer}>
+                  <span className={styles.layerNum}>2</span>
+                  <div className={styles.miniLayer}>
+                    {[...Array(9)].map((_, i) => (
+                      <div key={i} className={`${styles.miniCell} ${i === 4 ? styles.centerCell : ''}`} />
+                    ))}
+                  </div>
+                </div>
+                <div className={styles.visualLayer}>
+                  <span className={styles.layerNum}>1</span>
+                  <div className={styles.miniLayer}>
+                    {[...Array(9)].map((_, i) => <div key={i} className={styles.miniCell} />)}
+                  </div>
+                </div>
+              </div>
+            </div>
 
-          <Card hover padding="lg" className={styles.featureCard}>
-            <div className={styles.featureIcon}>🌐</div>
-            <h3>Real-time Multiplayer</h3>
-            <p>Play online with friends. Create or join lobbies instantly.</p>
-          </Card>
+            <div className={styles.explainText}>
+              <h3>3 Layers, 27 Cells, 49 Winning Lines</h3>
+              <ul>
+                <li>Win by getting <strong>3 in a row</strong> in ANY direction</li>
+                <li>Lines can go horizontal, vertical, diagonal, or <strong>through layers</strong></li>
+                <li>The <span className={styles.centerHighlight}>center cell</span> is key — it's part of 13 winning lines!</li>
+              </ul>
+            </div>
+          </div>
 
-          <Card hover padding="lg" className={styles.featureCard}>
-            <div className={styles.featureIcon}>🔄</div>
-            <h3>Interactive 3D</h3>
-            <p>Rotate, zoom, and pan the 3D board for the perfect view.</p>
-          </Card>
+          {/* Key mechanics */}
+          <div className={styles.mechanicsGrid}>
+            <div className={styles.mechanic}>
+              <div className={styles.mechanicIcon}>⚡</div>
+              <h4>Takeovers</h4>
+              <p>Replace an opponent's piece with yours! Each player gets 5 takeovers per game to disrupt strategies.</p>
+            </div>
+
+            <div className={styles.mechanic}>
+              <div className={styles.mechanicIcon}>🚫</div>
+              <h4>No Instant Wins</h4>
+              <p>You can't use a takeover to directly complete a winning line — pure strategy required!</p>
+            </div>
+
+            <div className={styles.mechanic}>
+              <div className={styles.mechanicIcon}>🌐</div>
+              <h4>Multiplayer</h4>
+              <p>Play locally on one device or create an online lobby with a shareable code.</p>
+            </div>
+          </div>
+
+          <Link href="/rules" className={styles.fullRulesLink}>
+            📖 See all 49 winning lines & full rules →
+          </Link>
         </section>
       </main>
 
       {/* Footer */}
       <footer className={styles.footer}>
-        <p>
-          Built with Next.js & Three.js
-        </p>
+        <p>3D T³ — A strategic twist on a classic</p>
       </footer>
 
       {/* Join Lobby Modal */}
       <Modal
         isOpen={showJoinModal}
         onClose={() => setShowJoinModal(false)}
-        title="Join Lobby"
-        size="sm"
+        title="Join Game"
       >
-        <div className={styles.joinForm}>
+        <div className={styles.modalContent}>
+          <p>Enter the 6-character lobby code to join a game.</p>
+
           <Input
             label="Lobby Code"
-            placeholder="Enter 6-character code"
+            placeholder="ABC123"
             value={lobbyCode}
             onChange={(e) => setLobbyCode(e.target.value.toUpperCase())}
             maxLength={6}
             fullWidth
           />
-          <Button
-            variant="primary"
-            fullWidth
-            disabled={lobbyCode.length !== 6}
-            onClick={() => {
-              // Navigate to lobby
-              window.location.href = `/lobby/${lobbyCode}`;
-            }}
+
+          <Link
+            href={lobbyCode.length === 6 ? `/lobby/${lobbyCode}` : '#'}
+            onClick={(e) => lobbyCode.length !== 6 && e.preventDefault()}
           >
-            Join
-          </Button>
+            <Button
+              variant="primary"
+              fullWidth
+              disabled={lobbyCode.length !== 6}
+            >
+              Join Lobby
+            </Button>
+          </Link>
         </div>
       </Modal>
     </div>

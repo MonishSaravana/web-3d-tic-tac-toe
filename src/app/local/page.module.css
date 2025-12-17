@@ -1,0 +1,238 @@
+/* Local Game Page Styles */
+
+.container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-primary);
+}
+
+/* Header */
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-md) var(--space-xl);
+    border-bottom: 1px solid var(--border-subtle);
+    background: var(--bg-secondary);
+}
+
+.backLink {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-size: 0.875rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: color var(--transition-fast);
+}
+
+.backLink:hover {
+    color: var(--text-primary);
+}
+
+.headerCenter {
+    display: flex;
+    align-items: center;
+}
+
+.headerTitle {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.turnIndicator {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    padding: var(--space-xs) var(--space-md);
+    background: var(--bg-elevated);
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-subtle);
+}
+
+/* Settings Screen */
+.settingsMain {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-xl);
+}
+
+.settingsCard {
+    max-width: 400px;
+    width: 100%;
+}
+
+.settingsCard h2 {
+    text-align: center;
+    margin-bottom: var(--space-xl);
+    font-size: 1.5rem;
+}
+
+.settingGroup {
+    margin-bottom: var(--space-lg);
+}
+
+.settingGroup label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: var(--space-sm);
+}
+
+.buttonGroup {
+    display: flex;
+    gap: var(--space-sm);
+}
+
+.optionBtn {
+    flex: 1;
+    padding: var(--space-sm) var(--space-md);
+    background: var(--bg-primary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.optionBtn:hover {
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+}
+
+.optionBtn.active {
+    background: var(--text-primary);
+    color: var(--bg-primary);
+    border-color: var(--text-primary);
+}
+
+.optionBtn.fullWidth {
+    width: 100%;
+}
+
+.settingHint {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: var(--space-xs);
+    text-align: center;
+}
+
+/* Game Screen */
+.main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-lg);
+}
+
+.gameArea {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: var(--space-xl);
+    width: 100%;
+    max-width: 1200px;
+    align-items: start;
+}
+
+.boardContainer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.boardContainer>div:first-child {
+    aspect-ratio: 1;
+    max-height: 70vh;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--border-subtle);
+    overflow: hidden;
+}
+
+.boardLoading {
+    width: 100%;
+    height: 100%;
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-md);
+    color: var(--text-muted);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-xl);
+}
+
+.spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--border-subtle);
+    border-top-color: var(--text-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+.controlsHint {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-lg);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.hudContainer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    position: sticky;
+    top: var(--space-lg);
+}
+
+.extraControls {
+    margin-top: var(--space-sm);
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .gameArea {
+        grid-template-columns: 1fr;
+    }
+
+    .hudContainer {
+        position: static;
+    }
+}
+
+@media (max-width: 640px) {
+    .header {
+        padding: var(--space-md);
+    }
+
+    .main,
+    .settingsMain {
+        padding: var(--space-md);
+    }
+
+    .controlsHint {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

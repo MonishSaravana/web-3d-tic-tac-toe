@@ -1,0 +1,22 @@
+/* Ad Banner Styles */
+
+.adContainer {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+/* Hide empty ad containers gracefully */
+.adContainer:empty::after {
+    content: '';
+    display: block;
+}
+
+/* Ensure ads are responsive */
+.adContainer ins {
+    width: 100%;
+}

@@ -1,21 +1,22 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Space_Mono } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
+const spaceMono = Space_Mono({
+  weight: ['400', '700'],
   subsets: ["latin"],
   display: 'swap',
-  variable: '--font-sans',
+  variable: '--font-mono',
 });
 
 export const metadata: Metadata = {
-  title: "3D Tic-Tac-Toe | Multiplayer Strategy Game",
-  description: "Play 3D Tic-Tac-Toe online with friends! A multiplayer strategy game on a 3×3×3 grid with unique takeover mechanics. Create or join lobbies and compete in real-time.",
-  keywords: ["3D Tic-Tac-Toe", "multiplayer game", "online game", "strategy game", "board game"],
-  authors: [{ name: "3D TTT" }],
+  title: "3D T³ | Tic-Tac-Toe in Three Dimensions",
+  description: "3D T³ - Tic-Tac-Toe in three dimensions! Play on a 3×3×3 cube with 49 ways to win. Strategic takeovers, 2-3 players, online or local multiplayer.",
+  keywords: ["3D T3", "T cubed", "3D Tic-Tac-Toe", "multiplayer game", "online game", "strategy game", "board game"],
+  authors: [{ name: "3D T³" }],
   openGraph: {
-    title: "3D Tic-Tac-Toe | Multiplayer Strategy Game",
-    description: "Play 3D Tic-Tac-Toe online with friends! A multiplayer strategy game on a 3×3×3 grid.",
+    title: "3D T³ | Tic-Tac-Toe in Three Dimensions",
+    description: "Play Tic-Tac-Toe on a 3×3×3 cube! 49 ways to win, strategic takeovers, 2-3 players.",
     type: "website",
   },
 };
@@ -37,7 +38,7 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
       </head>
-      <body className={inter.variable}>
+      <body className={spaceMono.variable}>
         {children}
       </body>
     </html>
