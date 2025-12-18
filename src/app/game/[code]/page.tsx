@@ -8,7 +8,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Position, PlayerNumber, Board, positionToIndex } from '@/lib/game/types';
 import { checkWin, isValidMove, isValidTakeover, applyMove, getNextPlayer } from '@/lib/game/logic';
-import { GameHUD, WinOverlay } from '@/components/game';
+import { GameHUD, WinOverlay, GameTimer, MoveTimer } from '@/components/game';
 import { Button, ThemeToggle } from '@/components/ui';
 import styles from './page.module.css';
 
@@ -259,6 +259,7 @@ export default function OnlineGamePage() {
                 </div>
 
                 <div className={styles.headerCenter}>
+                    <GameTimer isRunning={!winner} />
                     {isMyTurn && !winner && (
                         <span className={styles.yourTurn}>Your Turn!</span>
                     )}
@@ -293,6 +294,22 @@ export default function OnlineGamePage() {
 
                     {/* HUD */}
                     <div className={styles.hudContainer}>
+                        {/* Move Timer - shows for current player, skips on timeout */}
+                        {!winner && (
+                            <MoveTimer
+                                mode="per_move"
+                                timePerMove={30}
+                                isActive={isMyTurn}
+                                onTimeUp={async () => {
+                                    if (!isMyTurn || !game) return;
+                                    // Skip turn when timer runs out
+                                    const { makeMove } = await import('@/lib/supabase');
+                                    const nextTurn = getNextPlayer(game.current_turn as PlayerNumber);
+                                    await makeMove(game.id, game.board, nextTurn, null);
+                                }}
+                            />
+                        )}
+
                         <GameHUD
                             players={hudPlayers}
                             currentTurn={game.current_turn as PlayerNumber}
