@@ -18,6 +18,9 @@ interface DbLobby {
     code: string;
     status: 'waiting' | 'playing' | 'finished';
     max_players: number;
+    time_mode?: 'unlimited' | 'per_move' | 'time_bank';
+    time_per_move?: number;
+    time_bank?: number;
 }
 
 interface DbPlayer {
@@ -294,11 +297,12 @@ export default function OnlineGamePage() {
 
                     {/* HUD */}
                     <div className={styles.hudContainer}>
-                        {/* Move Timer - shows for current player, skips on timeout */}
-                        {!winner && (
+                        {/* Move Timer - shows when timer is enabled */}
+                        {!winner && lobby?.time_mode && lobby.time_mode !== 'unlimited' && (
                             <MoveTimer
-                                mode="per_move"
-                                timePerMove={30}
+                                mode={lobby.time_mode}
+                                timePerMove={lobby.time_per_move ?? 30}
+                                timeRemaining={lobby.time_bank ?? 120}
                                 isActive={isMyTurn}
                                 onTimeUp={async () => {
                                     if (!isMyTurn || !game) return;

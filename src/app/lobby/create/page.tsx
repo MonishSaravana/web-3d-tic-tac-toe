@@ -18,8 +18,13 @@ export default function CreateLobbyPage() {
     // Lobby settings
     const [isPublic, setIsPublic] = useState(false);
     const [maxPlayers, setMaxPlayers] = useState<2 | 3>(3);
-    const [defaultTakeovers, setDefaultTakeovers] = useState(5);
+    const [defaultTakeovers, setDefaultTakeovers] = useState(3);
     const [showAdvanced, setShowAdvanced] = useState(false);
+
+    // Timer settings
+    const [timerMode, setTimerMode] = useState<'unlimited' | 'per_move' | 'time_bank'>('unlimited');
+    const [timePerMove, setTimePerMove] = useState(30);
+    const [timeBank, setTimeBank] = useState(120);
 
     useEffect(() => {
         const savedTheme = localStorage.getItem('ttt-theme') as 'dark' | 'light' || 'dark';
@@ -64,6 +69,9 @@ export default function CreateLobbyPage() {
                 isPublic,
                 maxPlayers,
                 defaultTakeovers,
+                timeMode: timerMode,
+                timePerMove,
+                timeBank,
             });
 
             if (createError || !lobby) {
@@ -87,7 +95,7 @@ export default function CreateLobbyPage() {
             setError('An unexpected error occurred');
             setIsCreating(false);
         }
-    }, [nickname, isPublic, maxPlayers, defaultTakeovers, router]);
+    }, [nickname, isPublic, maxPlayers, defaultTakeovers, timerMode, timePerMove, timeBank, router]);
 
     // Quick Play - find or create public lobby
     const handleQuickPlay = useCallback(async () => {
@@ -239,6 +247,64 @@ export default function CreateLobbyPage() {
                                         ))}
                                     </div>
                                 </div>
+
+                                <div className={styles.settingRow}>
+                                    <label>Move Timer</label>
+                                    <div className={styles.optionButtons}>
+                                        <button
+                                            className={`${styles.optionBtn} ${timerMode === 'unlimited' ? styles.active : ''}`}
+                                            onClick={() => setTimerMode('unlimited')}
+                                        >
+                                            ∞ None
+                                        </button>
+                                        <button
+                                            className={`${styles.optionBtn} ${timerMode === 'per_move' ? styles.active : ''}`}
+                                            onClick={() => setTimerMode('per_move')}
+                                        >
+                                            ⏱ Per Move
+                                        </button>
+                                        <button
+                                            className={`${styles.optionBtn} ${timerMode === 'time_bank' ? styles.active : ''}`}
+                                            onClick={() => setTimerMode('time_bank')}
+                                        >
+                                            🏦 Time Bank
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {timerMode === 'per_move' && (
+                                    <div className={styles.settingRow}>
+                                        <label>Seconds Per Move</label>
+                                        <div className={styles.optionButtons}>
+                                            {[15, 30, 60].map(n => (
+                                                <button
+                                                    key={n}
+                                                    className={`${styles.optionBtn} ${timePerMove === n ? styles.active : ''}`}
+                                                    onClick={() => setTimePerMove(n)}
+                                                >
+                                                    {n}s
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {timerMode === 'time_bank' && (
+                                    <div className={styles.settingRow}>
+                                        <label>Time Bank (Total)</label>
+                                        <div className={styles.optionButtons}>
+                                            {[60, 120, 300].map(n => (
+                                                <button
+                                                    key={n}
+                                                    className={`${styles.optionBtn} ${timeBank === n ? styles.active : ''}`}
+                                                    onClick={() => setTimeBank(n)}
+                                                >
+                                                    {n >= 60 ? `${n / 60}m` : `${n}s`}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
 
