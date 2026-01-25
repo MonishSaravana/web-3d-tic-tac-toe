@@ -4,7 +4,7 @@
 
 **A strategic twist on the classic game - Tic-Tac-Toe in 3D with takeovers, multiplayer, and tournaments**
 
-[Play Now](https://your-deployment-url.com) • [Report Bug](https://github.com/yourusername/3d-tic-tac-toe/issues) • [Request Feature](https://github.com/yourusername/3d-tic-tac-toe/issues)
+[Play Now](https://3dttt.monishsaravana.com/) • [Report Bug](https://github.com/MonishSaravana/web-3d-tic-tac-toe/issues) • [Request Feature](https://github.com/MonishSaravana/web-3d-tic-tac-toe/issues)
 
 </div>
 
@@ -137,8 +137,8 @@ Get **3 of your pieces in a row** in any direction across the 3D cube.
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/3d-tic-tac-toe.git
-   cd 3d-tic-tac-toe
+   git clone https://github.com/MonishSaravana/web-3d-tic-tac-toe.git
+   cd web-3d-tic-tac-toe
    ```
 
 2. **Install dependencies**
@@ -470,7 +470,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/3d-tic-tac-toe/issues)
+- **Issues**: [GitHub Issues](https://github.com/MonishSaravana/web-3d-tic-tac-toe/issues)
 - **Email**: monish.sd.2008@gmail.com
 - **Website**: [monishsaravana.com](https://monishsaravana.com)
 
