@@ -71,7 +71,8 @@ export default function OnlineGamePage() {
     const [isTakeoverMode, setIsTakeoverMode] = useState(false);
     const [showWinOverlay, setShowWinOverlay] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [view, setView] = useState<'layers' | '3d'>('layers');
+    // 'layers' is the no-WebGL fallback, never a choice.
+    const [view, setView] = useState<'layers' | '3d'>('3d');
     const [notice, setNotice] = useState<string | null>(null);
 
     const channelRef = useRef<any>(null);
@@ -88,13 +89,6 @@ export default function OnlineGamePage() {
         const savedTheme = localStorage.getItem('ttt-theme') as 'dark' | 'light' || 'dark';
         setTheme(savedTheme);
         document.documentElement.setAttribute('data-theme', savedTheme);
-
-        const savedView = localStorage.getItem('ttt-view');
-        if (savedView === 'layers' || savedView === '3d') {
-            setView(savedView);
-        } else if (window.matchMedia('(min-width: 900px)').matches) {
-            setView('3d');
-        }
 
         if (!lobbyCode) return;
 
@@ -297,38 +291,23 @@ export default function OnlineGamePage() {
                 <div className={styles.gameArea}>
                     {/* Board */}
                     <div className={styles.boardContainer}>
-                        <div className={styles.viewToggle} role="group" aria-label="Board view">
-                            <button
-                                className={view === 'layers' ? styles.viewActive : undefined}
-                                onClick={() => {
-                                    setView('layers');
-                                    localStorage.setItem('ttt-view', 'layers');
-                                }}
-                            >
-                                Layers
-                            </button>
-                            <button
-                                className={view === '3d' ? styles.viewActive : undefined}
-                                onClick={() => {
-                                    setView('3d');
-                                    localStorage.setItem('ttt-view', '3d');
-                                }}
-                            >
-                                3D
-                            </button>
-                        </div>
-
                         {view === 'layers' ? (
-                            <LayerBoard
-                                board={game.board as Board}
-                                currentTurn={game.current_turn as PlayerNumber}
-                                winningLine={winningLine}
-                                isTakeoverMode={isTakeoverMode}
-                                takeoversRemaining={myTakeovers}
-                                pendingMove={null}
-                                onCellClick={handleCellClick}
-                                disabled={!isMyTurn || winner !== null}
-                            />
+                            <div className={styles.fallbackBoard}>
+                                <p className={styles.fallbackNote}>
+                                    This browser can&rsquo;t render 3D, so here is the cube opened
+                                    out into its three layers.
+                                </p>
+                                <LayerBoard
+                                    board={game.board as Board}
+                                    currentTurn={game.current_turn as PlayerNumber}
+                                    winningLine={winningLine}
+                                    isTakeoverMode={isTakeoverMode}
+                                    takeoversRemaining={myTakeovers}
+                                    pendingMove={null}
+                                    onCellClick={handleCellClick}
+                                    disabled={!isMyTurn || winner !== null}
+                                />
+                            </div>
                         ) : (
                             <>
                                 <div className={styles.canvasFrame}>
@@ -343,18 +322,13 @@ export default function OnlineGamePage() {
                                         onCellHover={setHoveredCell}
                                         onCellClick={handleCellClick}
                                         disabled={!isMyTurn || winner !== null}
-                                        onContextLost={() => {
-                                            setView('layers');
-                                            setNotice('3D rendering stopped — switched to the Layers view.');
-                                            setTimeout(() => setNotice(null), 3200);
-                                        }}
+                                        onContextLost={() => setView('layers')}
                                     />
                                 </div>
 
-                                <div className={styles.controlsHint}>
-                                    <span>Drag to rotate</span>
-                                    <span>Scroll to zoom</span>
-                                </div>
+                                <p className={styles.controlsHint}>
+                                    Drag to rotate · scroll to zoom · click a cell to play it
+                                </p>
                             </>
                         )}
                     </div>

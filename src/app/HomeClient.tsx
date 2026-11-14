@@ -112,8 +112,8 @@ export default function HomeClient() {
                             <span className={styles.stepNumber}>1</span>
                             <h3>Pick a cell</h3>
                             <p>
-                                The board is three 3×3 layers stacked into a cube. Tap any empty
-                                cell in the flat Layers view, or rotate the 3D cube and tap twice.
+                                The board is a 3×3×3 cube you can turn. Drag to rotate it, then
+                                click the marker in any empty cell to play there.
                             </p>
                         </li>
                         <li>

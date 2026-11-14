@@ -42,3 +42,23 @@ export const supabase = new Proxy({} as SupabaseClient, {
 export function isSupabaseConfigured(): boolean {
     return Boolean(supabaseUrl && supabaseAnonKey);
 }
+
+/**
+ * Turn transport-level failures into something a player can act on. A paused
+ * or unreachable backend otherwise surfaces as a raw "TypeError: Failed to
+ * fetch" in the middle of the page.
+ */
+export function friendlyError(raw: unknown): string {
+    const message =
+        raw instanceof Error ? raw.message : typeof raw === 'string' ? raw : '';
+
+    if (/failed to fetch|networkerror|load failed|fetch failed|err_name_not_resolved/i.test(message)) {
+        return 'Can\u2019t reach the game server, so online play is unavailable right now. You can still play the computer or pass a device around.';
+    }
+
+    if (/not configured/i.test(message)) {
+        return 'Online play isn\u2019t set up on this deployment. You can still play the computer or pass a device around.';
+    }
+
+    return message || 'Something went wrong. Please try again.';
+}

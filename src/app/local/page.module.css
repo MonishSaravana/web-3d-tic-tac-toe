@@ -211,10 +211,25 @@
     animation: spin 0.8s linear infinite;
 }
 
-.controlsHint {
+.readout {
     text-align: center;
-    font-size: 0.72rem;
+    font-size: 0.78rem;
     color: var(--text-muted);
+    margin: 0;
+    min-height: 1.2em;
+    font-variant-numeric: tabular-nums;
+}
+
+.fallbackBoard {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.fallbackNote {
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
     margin: 0;
 }
 

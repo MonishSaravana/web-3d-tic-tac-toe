@@ -1,8 +1,8 @@
 // Single-device play: against the computer, or 2-3 people sharing a screen.
 //
-// Design rule: the page lands you in a playable game with no setup step. Mode,
-// difficulty and view are pills above the board; everything else lives behind
-// an options sheet.
+// The board is the cube, always. Reading it in three dimensions is the game,
+// so there is no flat mode to retreat to — the flat board appears only if the
+// browser cannot run WebGL at all.
 
 'use client';
 
@@ -30,15 +30,16 @@ const GameBoard3D = dynamic(
         loading: () => (
             <div className={styles.boardLoading}>
                 <div className={styles.spinner} />
-                <span>Loading 3D board…</span>
+                <span>Building the cube…</span>
             </div>
         ),
     }
 );
 
 type Mode = 'cpu' | 'local2' | 'local3';
-type View = 'layers' | '3d';
 type TimerMode = 'unlimited' | 'per_move' | 'time_bank';
+
+const LAYER_NAMES = ['Bottom', 'Middle', 'Top'];
 
 interface Settings {
     mode: Mode;
@@ -109,13 +110,15 @@ function boardIsFull(board: Board): boolean {
     return board.every(cell => cell !== null);
 }
 
+function describeCell(pos: Position): string {
+    return `${LAYER_NAMES[pos.y]} layer · row ${pos.z + 1}, column ${pos.x + 1}`;
+}
+
 export default function LocalGame() {
     const [theme, setTheme] = useState<'dark' | 'light'>('dark');
     const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
-    const [view, setView] = useState<View>('layers');
     const [game, setGame] = useState<GameState>(() => createGame(DEFAULT_SETTINGS));
     const [history, setHistory] = useState<GameState[]>([]);
-    const [pendingMove, setPendingMove] = useState<Position | null>(null);
     const [hoveredCell, setHoveredCell] = useState<Position | null>(null);
     const [isTakeoverMode, setIsTakeoverMode] = useState(false);
     const [showWinOverlay, setShowWinOverlay] = useState(false);
@@ -123,6 +126,7 @@ export default function LocalGame() {
     const [soundEnabled, setSoundEnabled] = useState(true);
     const [toast, setToast] = useState<string | null>(null);
     const [aiThinking, setAiThinking] = useState(false);
+    const [noWebgl, setNoWebgl] = useState(false);
 
     const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -137,20 +141,7 @@ export default function LocalGame() {
         setTheme(savedTheme);
         document.documentElement.setAttribute('data-theme', savedTheme);
         setSoundEnabled(sounds.isEnabled());
-
-        const savedView = localStorage.getItem('ttt-view') as View | null;
-        if (savedView === 'layers' || savedView === '3d') {
-            setView(savedView);
-        } else if (window.matchMedia('(min-width: 900px)').matches) {
-            setView('3d');
-        }
     }, []);
-
-    const chooseView = (next: View) => {
-        setView(next);
-        localStorage.setItem('ttt-view', next);
-        setPendingMove(null);
-    };
 
     const toggleTheme = () => {
         const next = theme === 'dark' ? 'light' : 'dark';
@@ -180,7 +171,6 @@ export default function LocalGame() {
     const newGame = useCallback((next: Settings = settings) => {
         setGame(createGame(next));
         setHistory([]);
-        setPendingMove(null);
         setHoveredCell(null);
         setIsTakeoverMode(false);
         setShowWinOverlay(false);
@@ -230,14 +220,13 @@ export default function LocalGame() {
                     takeovers,
                     currentTurn: nextTurn(player, count, prev.flagged),
                     lastMove: position,
-                    timeRemaining: { ...prev.timeRemaining },
                 };
             });
 
             if (takeover) playTakeover();
             else playPlace();
 
-            setPendingMove(null);
+            setHoveredCell(null);
             setIsTakeoverMode(false);
         },
         [settings.mode]
@@ -247,8 +236,7 @@ export default function LocalGame() {
         (position: Position) => {
             if (isOver || isAiTurn) return;
 
-            const index = positionToIndex(position);
-            const value = game.board[index];
+            const value = game.board[positionToIndex(position)];
             const player = game.currentTurn;
 
             if (isTakeoverMode) {
@@ -262,32 +250,11 @@ export default function LocalGame() {
                 return;
             }
 
-            // In the 3D view a stray click while rotating is easy, so the first
-            // tap only arms the move; tapping the same cell again plays it.
-            if (view === '3d') {
-                const alreadyPending =
-                    pendingMove &&
-                    pendingMove.x === position.x &&
-                    pendingMove.y === position.y &&
-                    pendingMove.z === position.z;
-
-                if (!alreadyPending) {
-                    setPendingMove(position);
-                    return;
-                }
-            }
-
             setHistory(prev => [...prev, game]);
             commitMove(position, isTakeoverMode);
         },
-        [game, isTakeoverMode, isOver, isAiTurn, view, pendingMove, commitMove, showToast]
+        [game, isTakeoverMode, isOver, isAiTurn, commitMove, showToast]
     );
-
-    const confirmPending = () => {
-        if (!pendingMove) return;
-        setHistory(prev => [...prev, game]);
-        commitMove(pendingMove, isTakeoverMode);
-    };
 
     const undo = () => {
         if (history.length === 0) return;
@@ -295,7 +262,6 @@ export default function LocalGame() {
         // computer's reply.
         setGame(history[history.length - 1]);
         setHistory(history.slice(0, -1));
-        setPendingMove(null);
         setIsTakeoverMode(false);
         setShowWinOverlay(false);
     };
@@ -307,7 +273,7 @@ export default function LocalGame() {
             const t = setTimeout(() => {
                 if (game.winner !== null) playWin();
                 setShowWinOverlay(true);
-            }, 450);
+            }, 650);
             return () => clearTimeout(t);
         }
     }, [game.winner, game.draw]);
@@ -337,14 +303,12 @@ export default function LocalGame() {
             setAiThinking(false);
             if (!move) return;
             commitMove(move.position, move.isTakeover);
-        }, 520);
+        }, 560);
 
         return () => {
             cancelled = true;
             clearTimeout(timer);
         };
-        // `game` identity changes once per move, which is exactly when the
-        // computer should think again.
     }, [isAiTurn, game, settings.difficulty, commitMove]);
 
     // --- time bank ---------------------------------------------------------
@@ -430,6 +394,14 @@ export default function LocalGame() {
                 ? game.winner === AI_PLAYER ? 'Computer' : 'You'
                 : `Player ${game.winner}`;
 
+    const readout = isOver
+        ? null
+        : hoveredCell
+            ? describeCell(hoveredCell)
+            : isTakeoverMode
+                ? 'Pick an opponent piece to replace'
+                : 'Drag to rotate · scroll to zoom · click a cell to play it';
+
     return (
         <div className={styles.container}>
             <header className={styles.header}>
@@ -483,23 +455,6 @@ export default function LocalGame() {
 
                 <div className={styles.setupSpacer} />
 
-                <div className={styles.pillGroup} role="group" aria-label="Board view">
-                    <button
-                        className={`${styles.pill} ${view === 'layers' ? styles.pillActive : ''}`}
-                        onClick={() => chooseView('layers')}
-                        title="Flat view — the three layers side by side"
-                    >
-                        Layers
-                    </button>
-                    <button
-                        className={`${styles.pill} ${view === '3d' ? styles.pillActive : ''}`}
-                        onClick={() => chooseView('3d')}
-                        title="Rotatable 3D cube"
-                    >
-                        3D
-                    </button>
-                </div>
-
                 <button
                     className={styles.iconButton}
                     onClick={() => setShowOptions(true)}
@@ -519,7 +474,9 @@ export default function LocalGame() {
                         <div className={styles.turnBar} data-over={isOver || undefined}>
                             {isOver ? (
                                 <span className={styles.turnText}>
-                                    {game.draw ? 'Draw — the cube is full' : `${winnerName} ${winnerName === 'You' ? 'win' : 'wins'}!`}
+                                    {game.draw
+                                        ? 'Draw — the cube is full'
+                                        : `${winnerName} ${winnerName === 'You' ? 'win' : 'wins'}!`}
                                 </span>
                             ) : (
                                 <>
@@ -530,100 +487,79 @@ export default function LocalGame() {
                             )}
                         </div>
 
-                        <div className={styles.boardStage} data-view={view}>
-                            {view === 'layers' ? (
-                                <LayerBoard
-                                    board={game.board}
-                                    currentTurn={game.currentTurn}
-                                    winningLine={game.winningLine}
-                                    isTakeoverMode={isTakeoverMode}
-                                    takeoversRemaining={game.takeovers[game.currentTurn]}
-                                    pendingMove={pendingMove}
-                                    lastMove={game.lastMove}
-                                    onCellClick={attemptMove}
-                                    disabled={isOver || isAiTurn}
-                                />
+                        <div className={styles.boardStage}>
+                            {noWebgl ? (
+                                <div className={styles.fallbackBoard}>
+                                    <p className={styles.fallbackNote}>
+                                        This browser can’t render 3D, so here is the cube opened
+                                        out into its three layers.
+                                    </p>
+                                    <LayerBoard
+                                        board={game.board}
+                                        currentTurn={game.currentTurn}
+                                        winningLine={game.winningLine}
+                                        isTakeoverMode={isTakeoverMode}
+                                        takeoversRemaining={game.takeovers[game.currentTurn]}
+                                        pendingMove={null}
+                                        lastMove={game.lastMove}
+                                        onCellClick={attemptMove}
+                                        disabled={isOver || isAiTurn}
+                                    />
+                                </div>
                             ) : (
                                 <div className={styles.canvasFrame}>
                                     <GameBoard3D
                                         board={game.board}
                                         currentTurn={game.currentTurn}
                                         hoveredCell={hoveredCell}
-                                        selectedCell={pendingMove}
+                                        selectedCell={null}
                                         winningLine={game.winningLine}
                                         isTakeoverMode={isTakeoverMode}
                                         takeoversRemaining={game.takeovers[game.currentTurn]}
                                         onCellHover={setHoveredCell}
                                         onCellClick={attemptMove}
                                         disabled={isOver || isAiTurn}
-                                        onContextLost={() => {
-                                            chooseView('layers');
-                                            showToast('3D rendering stopped — switched to the Layers view.');
-                                        }}
+                                        onContextLost={() => setNoWebgl(true)}
                                     />
                                 </div>
                             )}
                         </div>
 
-                        {view === '3d' && !isOver && (
-                            <p className={styles.controlsHint}>
-                                Drag to rotate · scroll to zoom · tap a cell, then press Place here
+                        {readout && !noWebgl && (
+                            <p className={styles.readout} aria-live="polite">
+                                {readout}
                             </p>
                         )}
 
                         <div className={styles.actionBar}>
-                            {pendingMove && !isOver ? (
-                                <>
-                                    <Button variant="ghost" onClick={() => setPendingMove(null)}>
-                                        Cancel
-                                    </Button>
-                                    <Button variant="primary" onClick={confirmPending}>
-                                        Place here
-                                    </Button>
-                                </>
-                            ) : (
-                                <>
-                                    <Button
-                                        variant={isTakeoverMode ? 'danger' : 'secondary'}
-                                        onClick={() => {
-                                            if (!isTakeoverMode && takeoverTargets.length === 0) {
-                                                showToast(
-                                                    game.takeovers[game.currentTurn] === 0
-                                                        ? 'No takeovers left.'
-                                                        : 'No opponent piece can be taken over right now.'
-                                                );
-                                                return;
-                                            }
-                                            setPendingMove(null);
-                                            setIsTakeoverMode(!isTakeoverMode);
-                                        }}
-                                        disabled={isOver || isAiTurn}
-                                    >
-                                        {isTakeoverMode
-                                            ? 'Cancel takeover'
-                                            : `Takeover (${game.takeovers[game.currentTurn]})`}
-                                    </Button>
+                            <Button
+                                variant={isTakeoverMode ? 'danger' : 'secondary'}
+                                onClick={() => {
+                                    if (!isTakeoverMode && takeoverTargets.length === 0) {
+                                        showToast(
+                                            game.takeovers[game.currentTurn] === 0
+                                                ? 'No takeovers left.'
+                                                : 'No opponent piece can be taken over right now.'
+                                        );
+                                        return;
+                                    }
+                                    setIsTakeoverMode(!isTakeoverMode);
+                                }}
+                                disabled={isOver || isAiTurn}
+                            >
+                                {isTakeoverMode
+                                    ? 'Cancel takeover'
+                                    : `Takeover (${game.takeovers[game.currentTurn]})`}
+                            </Button>
 
-                                    <Button
-                                        variant="ghost"
-                                        onClick={undo}
-                                        disabled={history.length === 0}
-                                    >
-                                        Undo
-                                    </Button>
+                            <Button variant="ghost" onClick={undo} disabled={history.length === 0}>
+                                Undo
+                            </Button>
 
-                                    <Button variant="ghost" onClick={() => newGame()}>
-                                        New game
-                                    </Button>
-                                </>
-                            )}
+                            <Button variant="ghost" onClick={() => newGame()}>
+                                New game
+                            </Button>
                         </div>
-
-                        {isTakeoverMode && (
-                            <p className={styles.takeoverHint}>
-                                Pick an opponent piece to replace. A takeover can’t be the move that wins.
-                            </p>
-                        )}
                     </div>
 
                     <aside className={styles.hudContainer}>
@@ -632,7 +568,7 @@ export default function LocalGame() {
                                 mode={settings.timerMode}
                                 timePerMove={settings.timePerMove}
                                 timeRemaining={game.timeRemaining[game.currentTurn]}
-                                isActive={!pendingMove}
+                                isActive
                                 onTimeUp={() => {
                                     if (settings.timerMode !== 'per_move') return;
                                     showToast(`Player ${game.currentTurn} ran out of time.`);
@@ -674,9 +610,9 @@ export default function LocalGame() {
                 <WinOverlay
                     winner={game.winner}
                     winnerName={winnerName}
-                    isDraw={game.draw}
                     isLocalWinner={settings.mode === 'cpu' && game.winner === 1}
                     neutral={settings.mode !== 'cpu'}
+                    isDraw={game.draw}
                     onPlayAgain={() => newGame()}
                     onClose={() => setShowWinOverlay(false)}
                 />

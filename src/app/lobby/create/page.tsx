@@ -56,10 +56,11 @@ export default function CreateLobbyPage() {
         setError(null);
 
         try {
-            const { createLobbyWithSettings, joinLobby, isSupabaseConfigured } = await import('@/lib/supabase');
+            const { createLobbyWithSettings, joinLobby, isSupabaseConfigured, friendlyError } =
+                await import('@/lib/supabase');
 
             if (!isSupabaseConfigured()) {
-                setError('Supabase is not configured. Please set up environment variables.');
+                setError(friendlyError('not configured'));
                 setIsCreating(false);
                 return;
             }
@@ -75,7 +76,7 @@ export default function CreateLobbyPage() {
             });
 
             if (createError || !lobby) {
-                setError(createError || 'Failed to create lobby');
+                setError(friendlyError(createError) || 'Failed to create lobby');
                 setIsCreating(false);
                 return;
             }
@@ -84,7 +85,7 @@ export default function CreateLobbyPage() {
             const { player, error: joinError } = await joinLobby(lobby.code, nickname.trim());
 
             if (joinError || !player) {
-                setError(joinError || 'Failed to join lobby');
+                setError(friendlyError(joinError) || 'Failed to join lobby');
                 setIsCreating(false);
                 return;
             }
@@ -92,7 +93,8 @@ export default function CreateLobbyPage() {
             router.push(`/lobby/${lobby.code}`);
         } catch (err) {
             console.error('Error creating lobby:', err);
-            setError('An unexpected error occurred');
+            const { friendlyError } = await import('@/lib/supabase');
+            setError(friendlyError(err));
             setIsCreating(false);
         }
     }, [nickname, isPublic, maxPlayers, defaultTakeovers, timerMode, timePerMove, timeBank, router]);
@@ -108,10 +110,11 @@ export default function CreateLobbyPage() {
         setError(null);
 
         try {
-            const { findPublicLobby, createLobbyWithSettings, joinLobby, isSupabaseConfigured } = await import('@/lib/supabase');
+            const { findPublicLobby, createLobbyWithSettings, joinLobby, isSupabaseConfigured, friendlyError } =
+                await import('@/lib/supabase');
 
             if (!isSupabaseConfigured()) {
-                setError('Supabase is not configured.');
+                setError(friendlyError('not configured'));
                 setIsCreating(false);
                 return;
             }
@@ -124,11 +127,11 @@ export default function CreateLobbyPage() {
                 const { lobby: newLobby, error: createError } = await createLobbyWithSettings({
                     isPublic: true,
                     maxPlayers: 2,
-                    defaultTakeovers: 5,
+                    defaultTakeovers: 3,
                 });
 
                 if (createError || !newLobby) {
-                    setError(createError || 'Failed to create lobby');
+                    setError(friendlyError(createError) || 'Failed to create lobby');
                     setIsCreating(false);
                     return;
                 }
@@ -139,7 +142,7 @@ export default function CreateLobbyPage() {
             const { player, error: joinError } = await joinLobby(lobby.code, nickname.trim());
 
             if (joinError || !player) {
-                setError(joinError || 'Failed to join lobby');
+                setError(friendlyError(joinError) || 'Failed to join lobby');
                 setIsCreating(false);
                 return;
             }
@@ -147,7 +150,8 @@ export default function CreateLobbyPage() {
             router.push(`/lobby/${lobby.code}`);
         } catch (err) {
             console.error('Error with quick play:', err);
-            setError('An unexpected error occurred');
+            const { friendlyError } = await import('@/lib/supabase');
+            setError(friendlyError(err));
             setIsCreating(false);
         }
     }, [nickname, router]);

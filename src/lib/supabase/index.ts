@@ -1,4 +1,4 @@
 // Supabase barrel export
-export { supabase, isSupabaseConfigured } from './client';
+export { supabase, isSupabaseConfigured, friendlyError } from './client';
 export * from './lobby';
 export * from './tournament';

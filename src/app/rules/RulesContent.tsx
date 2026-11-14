@@ -201,31 +201,31 @@ export default function RulesContent() {
                     <section className={styles.section}>
                         <h2>🎮 Controls</h2>
                         <p>
-                            Every game offers two views of the same board. Switch between them
-                            with the <strong>Layers / 3D</strong> toggle above the board — your
-                            choice is remembered.
+                            The board is a cube you look into and turn. Reading it in three
+                            dimensions is the game, so there is no flattened view to fall back
+                            on — every cell is reachable by rotating.
                         </p>
 
                         <div className={styles.controlsGrid}>
                             <div className={styles.control}>
-                                <span className={styles.controlIcon}>▦</span>
+                                <span className={styles.controlIcon}>⟳</span>
                                 <div>
-                                    <strong>Layers view</strong>
-                                    <span>The three layers side by side — tap a cell to play it</span>
+                                    <strong>Rotate</strong>
+                                    <span>Drag anywhere on the board</span>
                                 </div>
                             </div>
                             <div className={styles.control}>
-                                <span className={styles.controlIcon}>◰</span>
+                                <span className={styles.controlIcon}>⌕</span>
                                 <div>
-                                    <strong>3D view</strong>
-                                    <span>Drag to rotate, scroll to zoom</span>
+                                    <strong>Zoom</strong>
+                                    <span>Scroll, or pinch on a touch screen</span>
                                 </div>
                             </div>
                             <div className={styles.control}>
                                 <span className={styles.controlIcon}>◎</span>
                                 <div>
-                                    <strong>Placing in 3D</strong>
-                                    <span>Tap a cell to arm it, then press Place here</span>
+                                    <strong>Place a piece</strong>
+                                    <span>Click a cell marker — a drag never places</span>
                                 </div>
                             </div>
                             <div className={styles.control}>
@@ -236,6 +236,12 @@ export default function RulesContent() {
                                 </div>
                             </div>
                         </div>
+
+                        <p>
+                            Each layer is labelled in the scene, and the cell under your cursor
+                            is named below the board, so you always know where in the cube you
+                            are aiming.
+                        </p>
                     </section>
 
                     {/* Tips */}

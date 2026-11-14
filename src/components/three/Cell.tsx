@@ -1,10 +1,13 @@
-// 3D Cell Component
-// Individual cell in the 3x3x3 grid with hover and click interaction
-// No visible outline by default - only shows on hover/selection
+// A single cell of the 3x3x3 grid.
+//
+// Every empty cell carries a visible stud. That is what makes the cube
+// playable: without it you are guessing where the clickable volumes are. The
+// stud grows and takes the current player's colour on hover, and the cell
+// volume lights up behind it.
 
 'use client';
 
-import React, { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import { useFrame, ThreeEvent } from '@react-three/fiber';
 import { Mesh } from 'three';
 import { Position } from '@/lib/game/types';
@@ -18,6 +21,9 @@ interface CellProps {
     isValidTarget: boolean;
     isTakeoverTarget: boolean;
     isWinningCell: boolean;
+    /** Colour of whoever is to move, used for the hover preview. */
+    turnColor: string;
+    cellSize?: number;
     onHover: (position: Position | null) => void;
     onClick: (position: Position) => void;
 }
@@ -31,77 +37,106 @@ export function Cell({
     isValidTarget,
     isTakeoverTarget,
     isWinningCell,
+    turnColor,
+    cellSize = 1.1,
     onHover,
     onClick,
 }: CellProps) {
-    const meshRef = useRef<Mesh>(null);
+    const volumeRef = useRef<Mesh>(null);
+    const studRef = useRef<Mesh>(null);
     const [localHover, setLocalHover] = useState(false);
 
-    const cellSize = 1.1; // Slightly larger for easier clicking
-    const visualSize = 0.9; // Visual size for hover effect
+    const active = isHovered || localHover;
+    const playable = isValidTarget || isTakeoverTarget;
 
-    const handlePointerEnter = useCallback((e: ThreeEvent<PointerEvent>) => {
-        e.stopPropagation();
-        setLocalHover(true);
-        if (isValidTarget || isTakeoverTarget) {
-            onHover(position);
+    const handlePointerEnter = useCallback(
+        (e: ThreeEvent<PointerEvent>) => {
+            e.stopPropagation();
+            setLocalHover(true);
+            if (playable) onHover(position);
+        },
+        [position, playable, onHover]
+    );
+
+    const handlePointerLeave = useCallback(
+        (e: ThreeEvent<PointerEvent>) => {
+            e.stopPropagation();
+            setLocalHover(false);
+            onHover(null);
+        },
+        [onHover]
+    );
+
+    const handleClick = useCallback(
+        (e: ThreeEvent<MouseEvent>) => {
+            e.stopPropagation();
+            if (playable) onClick(position);
+        },
+        [position, playable, onClick]
+    );
+
+    useFrame((state, delta) => {
+        if (volumeRef.current && isWinningCell) {
+            const pulse = Math.sin(state.clock.elapsedTime * 3) * 0.03 + 1;
+            volumeRef.current.scale.setScalar(pulse);
         }
-    }, [position, isValidTarget, isTakeoverTarget, onHover]);
 
-    const handlePointerLeave = useCallback((e: ThreeEvent<PointerEvent>) => {
-        e.stopPropagation();
-        setLocalHover(false);
-        onHover(null);
-    }, [onHover]);
-
-    const handleClick = useCallback((e: ThreeEvent<MouseEvent>) => {
-        e.stopPropagation();
-        if (isValidTarget || isTakeoverTarget) {
-            onClick(position);
-        }
-    }, [position, isValidTarget, isTakeoverTarget, onClick]);
-
-    // Animate winning cells
-    useFrame((state) => {
-        if (meshRef.current && isWinningCell) {
-            const pulse = Math.sin(state.clock.elapsedTime * 3) * 0.02 + 1;
-            meshRef.current.scale.setScalar(pulse);
+        // Grow the stud toward the cursor so the target is unmistakable.
+        if (studRef.current) {
+            const target = active && isValidTarget ? 2.1 : 1;
+            const current = studRef.current.scale.x;
+            studRef.current.scale.setScalar(
+                current + (target - current) * Math.min(1, delta * 12)
+            );
         }
     });
 
-    // Only show visual effect when hovered, selected, or winning
-    const shouldShowVisual = isHovered || isSelected || isWinningCell || (localHover && isValidTarget);
+    const showVolume = active || isSelected || isWinningCell;
 
-    // Determine color based on state
-    const getColor = () => {
-        if (isWinningCell) return '#22c55e';
-        if (isTakeoverTarget) return '#ef4444';
-        return '#ffffff';
-    };
+    const volumeColor = isWinningCell
+        ? '#22c55e'
+        : isTakeoverTarget
+            ? '#ef4444'
+            : turnColor;
 
-    const getOpacity = () => {
-        if (isWinningCell) return 0.3;
-        if (isSelected) return 0.38;
-        if (isHovered) return 0.2;
-        if (localHover) return 0.12;
-        return 0;
-    };
+    const volumeOpacity = isWinningCell
+        ? 0.3
+        : isSelected
+            ? 0.34
+            : active && playable
+                ? 0.2
+                : active
+                    ? 0.07
+                    : 0;
 
     return (
         <group position={worldPosition}>
-            {/* Translucent fill shown only on hover/select/win */}
-            {shouldShowVisual && (
-                <mesh ref={meshRef}>
-                    <boxGeometry args={[visualSize, visualSize, visualSize]} />
+            {showVolume && (
+                <mesh ref={volumeRef}>
+                    <boxGeometry args={[0.92, 0.92, 0.92]} />
                     <meshBasicMaterial
-                        color={getColor()}
+                        color={volumeColor}
                         transparent
-                        opacity={getOpacity()}
+                        opacity={volumeOpacity}
+                        depthWrite={false}
                     />
                 </mesh>
             )}
 
-            {/* Invisible hitbox for interaction - always present */}
+            {/* The stud: a visible, aimable marker in every empty cell. */}
+            {isEmpty && (
+                <mesh ref={studRef}>
+                    <sphereGeometry args={[0.055, 12, 12]} />
+                    <meshBasicMaterial
+                        color={active && isValidTarget ? turnColor : '#ffffff'}
+                        transparent
+                        opacity={active && isValidTarget ? 0.95 : 0.3}
+                        depthWrite={false}
+                    />
+                </mesh>
+            )}
+
+            {/* Invisible hitbox — slightly larger than the cell for easy aiming. */}
             <mesh
                 visible={false}
                 onPointerEnter={handlePointerEnter}
@@ -115,86 +150,87 @@ export function Cell({
     );
 }
 
-// Classic 3D Tic-Tac-Toe Grid Lines
-// Just the dividing lines like a "#" shape extended into 3D
 interface TicTacToeGridProps {
     spacing: number;
+    /** Layers are pushed apart vertically so you can see inside the cube. */
+    ySpacing?: number;
     lineThickness?: number;
 }
 
-export function TicTacToeGrid({ spacing, lineThickness = 0.035 }: TicTacToeGridProps) {
-    // Grid dimensions
-    const totalSize = spacing * 3;
-    const halfTotal = totalSize / 2;
+/**
+ * The lattice. Horizontal lines are drawn per layer so that raising ySpacing
+ * separates the three boards instead of stretching one cube.
+ */
+export function TicTacToeGrid({
+    spacing,
+    ySpacing = spacing,
+    lineThickness = 0.022,
+}: TicTacToeGridProps) {
+    const planSize = spacing * 3;
+    const inner1 = -spacing / 2;
+    const inner2 = spacing / 2;
 
-    // Line positions (at 1/3 and 2/3 of the grid)
-    const linePos1 = -spacing / 2;
-    const linePos2 = spacing / 2;
-
-    // Create cylinder-based lines for better visibility
     const lines: Array<{
         key: string;
         position: [number, number, number];
         rotation: [number, number, number];
         length: number;
+        faint?: boolean;
     }> = [];
 
-    // Vertical pillars (Y-axis) - 4 pillars at the internal intersections
-    const pillarPositions = [
-        [linePos1, linePos1],
-        [linePos1, linePos2],
-        [linePos2, linePos1],
-        [linePos2, linePos2],
-    ];
-
-    for (const [x, z] of pillarPositions) {
-        lines.push({
-            key: `pillar-${x}-${z}`,
-            position: [x, 0, z],
-            rotation: [0, 0, 0],
-            length: totalSize,
-        });
-    }
-
-    // Horizontal lines along X-axis (at each y level, 2 lines per level)
-    for (let yIdx = -1; yIdx <= 1; yIdx++) {
-        const y = yIdx * spacing;
-        // Lines at z = linePos1 and z = linePos2
-        for (const z of [linePos1, linePos2]) {
+    // Vertical connectors between the layers, kept faint: they explain the
+    // stacking without crowding the cells.
+    for (const x of [inner1, inner2]) {
+        for (const z of [inner1, inner2]) {
             lines.push({
-                key: `x-line-${yIdx}-${z}`,
-                position: [0, y, z],
-                rotation: [0, 0, Math.PI / 2],
-                length: totalSize,
+                key: `pillar-${x}-${z}`,
+                position: [x, 0, z],
+                rotation: [0, 0, 0],
+                length: ySpacing * 2,
+                faint: true,
             });
         }
     }
 
-    // Horizontal lines along Z-axis (at each y level, 2 lines per level)
-    for (let yIdx = -1; yIdx <= 1; yIdx++) {
-        const y = yIdx * spacing;
-        // Lines at x = linePos1 and x = linePos2
-        for (const x of [linePos1, linePos2]) {
+    // Each layer gets its own "#" of lines.
+    for (let level = -1; level <= 1; level++) {
+        const y = level * ySpacing;
+
+        for (const z of [inner1, inner2]) {
             lines.push({
-                key: `z-line-${yIdx}-${x}`,
+                key: `x-${level}-${z}`,
+                position: [0, y, z],
+                rotation: [0, 0, Math.PI / 2],
+                length: planSize,
+            });
+        }
+
+        for (const x of [inner1, inner2]) {
+            lines.push({
+                key: `z-${level}-${x}`,
                 position: [x, y, 0],
                 rotation: [Math.PI / 2, 0, 0],
-                length: totalSize,
+                length: planSize,
             });
         }
     }
 
     return (
         <group>
-            {lines.map(({ key, position, rotation, length }) => (
+            {lines.map(({ key, position, rotation, length, faint }) => (
                 <mesh key={key} position={position} rotation={rotation}>
-                    <cylinderGeometry args={[lineThickness, lineThickness, length, 8]} />
-                    <meshStandardMaterial
+                    <cylinderGeometry
+                        args={[
+                            faint ? lineThickness * 0.7 : lineThickness,
+                            faint ? lineThickness * 0.7 : lineThickness,
+                            length,
+                            6,
+                        ]}
+                    />
+                    <meshBasicMaterial
                         color="#9aa4b6"
-                        emissive="#2d3340"
-                        emissiveIntensity={0.9}
-                        metalness={0.1}
-                        roughness={0.55}
+                        transparent
+                        opacity={faint ? 0.22 : 0.55}
                     />
                 </mesh>
             ))}
@@ -202,7 +238,7 @@ export function TicTacToeGrid({ spacing, lineThickness = 0.035 }: TicTacToeGridP
     );
 }
 
-// Keep the old GridLines for backwards compatibility but mark as deprecated
+/** @deprecated kept for older imports */
 export function GridLines({ spacing }: { spacing: number; size?: number }) {
     return <TicTacToeGrid spacing={spacing} />;
 }

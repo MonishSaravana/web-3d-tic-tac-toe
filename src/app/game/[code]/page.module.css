@@ -78,31 +78,17 @@
     touch-action: none;
 }
 
-.viewToggle {
-    display: inline-flex;
-    align-self: center;
-    padding: 3px;
-    gap: 2px;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-full);
+.fallbackBoard {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
 }
 
-.viewToggle button {
-    appearance: none;
-    border: none;
-    background: transparent;
+.fallbackNote {
+    text-align: center;
+    font-size: 0.8rem;
     color: var(--text-secondary);
-    font: inherit;
-    font-size: 0.78rem;
-    padding: 0.35rem 0.9rem;
-    border-radius: var(--radius-full);
-    cursor: pointer;
-}
-
-.viewActive {
-    background: var(--text-primary);
-    color: var(--bg-primary) !important;
+    margin: 0;
 }
 
 .notice {
