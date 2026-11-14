@@ -7,7 +7,7 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useDemoGameStore } from '@/lib/game/store';
 import { Position, positionToIndex } from '@/lib/game/types';
-import { isValidTakeover, wouldResultInWin } from '@/lib/game/logic';
+import { isValidTakeover } from '@/lib/game/logic';
 import { GameHUD, WinOverlay } from '@/components/game';
 import { Button, ThemeToggle } from '@/components/ui';
 import styles from './page.module.css';

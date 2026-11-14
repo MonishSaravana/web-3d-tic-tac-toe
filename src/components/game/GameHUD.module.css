@@ -189,7 +189,39 @@
 }
 
 .winnerPiece {
-    font-size: 4rem;
+    display: inline-grid;
+    place-items: center;
+    margin-bottom: var(--space-xl);
+}
+
+.winContent {
+    cursor: default;
+    max-width: min(90vw, 420px);
+}
+
+.winActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    justify-content: center;
+}
+
+@media (max-width: 560px) {
+    .winContent {
+        padding: var(--space-xl);
+    }
+
+    .winEmoji {
+        font-size: 3.5rem;
+    }
+
+    .winTitle {
+        font-size: 2rem;
+    }
+
+    .winSubtitle {
+        font-size: 1rem;
+    }
 }
 
 @keyframes pulse {

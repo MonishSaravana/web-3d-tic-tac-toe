@@ -51,7 +51,7 @@
 
 .gameArea {
     display: grid;
-    grid-template-columns: 1fr 300px;
+    grid-template-columns: minmax(0, 1fr) 300px;
     gap: var(--space-xl);
     width: 100%;
     max-width: 1200px;
@@ -65,19 +65,67 @@
     gap: var(--space-md);
 }
 
-.boardContainer>div:first-child {
+.canvasFrame {
+    width: 100%;
     aspect-ratio: 1;
-    max-height: 70vh;
-    background: var(--bg-secondary);
+    max-height: min(62vh, 560px);
+    background: radial-gradient(circle at 50% 35%,
+            color-mix(in srgb, var(--text-primary) 5%, var(--bg-secondary)),
+            var(--bg-secondary) 70%);
     border-radius: var(--radius-xl);
     border: 1px solid var(--border-subtle);
     overflow: hidden;
+    touch-action: none;
+}
+
+.viewToggle {
+    display: inline-flex;
+    align-self: center;
+    padding: 3px;
+    gap: 2px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-full);
+}
+
+.viewToggle button {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: 0.78rem;
+    padding: 0.35rem 0.9rem;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+}
+
+.viewActive {
+    background: var(--text-primary);
+    color: var(--bg-primary) !important;
+}
+
+.notice {
+    position: fixed;
+    left: 50%;
+    bottom: var(--space-xl);
+    transform: translateX(-50%);
+    max-width: min(90vw, 420px);
+    padding: var(--space-sm) var(--space-lg);
+    border-radius: var(--radius-full);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-strong);
+    box-shadow: var(--shadow-lg);
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    text-align: center;
+    z-index: 120;
 }
 
 .boardLoading {
     width: 100%;
     height: 100%;
-    min-height: 400px;
+    min-height: 260px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -133,7 +181,11 @@
 /* Responsive */
 @media (max-width: 900px) {
     .gameArea {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .canvasFrame {
+        max-height: 80vw;
     }
 
     .hudContainer {

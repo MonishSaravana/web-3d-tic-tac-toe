@@ -2,13 +2,13 @@
 
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Position, PlayerNumber, Board, positionToIndex } from '@/lib/game/types';
-import { checkWin, isValidMove, isValidTakeover, applyMove, getNextPlayer } from '@/lib/game/logic';
-import { GameHUD, WinOverlay, GameTimer, MoveTimer } from '@/components/game';
+import { checkWin, isValidMove, isValidTakeover, applyMove, nextActivePlayer } from '@/lib/game/logic';
+import { GameHUD, WinOverlay, GameTimer, MoveTimer, LayerBoard } from '@/components/game';
 import { Button, ThemeToggle } from '@/components/ui';
 import styles from './page.module.css';
 
@@ -71,14 +71,30 @@ export default function OnlineGamePage() {
     const [isTakeoverMode, setIsTakeoverMode] = useState(false);
     const [showWinOverlay, setShowWinOverlay] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [view, setView] = useState<'layers' | '3d'>('layers');
+    const [notice, setNotice] = useState<string | null>(null);
 
     const channelRef = useRef<any>(null);
+
+    // Only players actually seated take turns — a 2-player lobby must never
+    // hand the turn to a player 3 that does not exist.
+    const seatedNumbers = useMemo(
+        () => players.map(p => p.player_number as PlayerNumber),
+        [players]
+    );
 
     // Initialize theme and load game
     useEffect(() => {
         const savedTheme = localStorage.getItem('ttt-theme') as 'dark' | 'light' || 'dark';
         setTheme(savedTheme);
         document.documentElement.setAttribute('data-theme', savedTheme);
+
+        const savedView = localStorage.getItem('ttt-view');
+        if (savedView === 'layers' || savedView === '3d') {
+            setView(savedView);
+        } else if (window.matchMedia('(min-width: 900px)').matches) {
+            setView('3d');
+        }
 
         if (!lobbyCode) return;
 
@@ -176,12 +192,13 @@ export default function OnlineGamePage() {
             if (cellValue !== null && cellValue !== currentPlayer) {
                 const validation = isValidTakeover(board, position, currentPlayer, localPlayer.takeovers_remaining);
                 if (!validation.valid) {
-                    alert(validation.reason);
+                    setNotice(validation.reason ?? 'You cannot take that cell.');
+                    setTimeout(() => setNotice(null), 2600);
                     return;
                 }
 
                 const newBoard = applyMove(board, position, currentPlayer);
-                const nextTurn = getNextPlayer(currentPlayer);
+                const nextTurn = nextActivePlayer(currentPlayer, seatedNumbers);
 
                 // Update game state in Supabase
                 await makeMove(game.id, newBoard, nextTurn, null);
@@ -199,13 +216,15 @@ export default function OnlineGamePage() {
 
                 const newBoard = applyMove(board, position, currentPlayer);
                 const winResult = checkWin(newBoard);
-                const nextTurn = winResult ? currentPlayer : getNextPlayer(currentPlayer);
+                const nextTurn = winResult
+                    ? currentPlayer
+                    : nextActivePlayer(currentPlayer, seatedNumbers);
 
                 await makeMove(game.id, newBoard, nextTurn, winResult?.winner || null);
                 setSelectedCell(null);
             }
         }
-    }, [game, localPlayer, isTakeoverMode]);
+    }, [game, localPlayer, isTakeoverMode, seatedNumbers]);
 
     const handleLeaveGame = () => {
         router.push('/');
@@ -220,8 +239,10 @@ export default function OnlineGamePage() {
         isLocalPlayer: p.id === localPlayer?.id,
     }));
 
-    // Calculate winning line positions
-    const winningLine = game?.winner ? null : null; // TODO: Store winning line in DB or recalculate
+    // Recompute the winning line from the board so it can be highlighted.
+    const winningLine = game?.winner
+        ? checkWin(game.board as Board)?.winningLine ?? null
+        : null;
 
     const myTakeovers = localPlayer?.takeovers_remaining ?? 0;
     const isMyTurn = game?.current_turn === localPlayer?.player_number;
@@ -274,25 +295,68 @@ export default function OnlineGamePage() {
             {/* Game Area */}
             <main className={styles.main}>
                 <div className={styles.gameArea}>
-                    {/* 3D Board */}
+                    {/* Board */}
                     <div className={styles.boardContainer}>
-                        <GameBoard
-                            board={game.board as Board}
-                            currentTurn={game.current_turn as PlayerNumber}
-                            hoveredCell={hoveredCell}
-                            selectedCell={selectedCell}
-                            winningLine={winningLine}
-                            isTakeoverMode={isTakeoverMode}
-                            takeoversRemaining={myTakeovers}
-                            onCellHover={setHoveredCell}
-                            onCellClick={handleCellClick}
-                            disabled={!isMyTurn || winner !== null}
-                        />
-
-                        <div className={styles.controlsHint}>
-                            <span>🖱️ Drag to rotate</span>
-                            <span>⚲ Scroll to zoom</span>
+                        <div className={styles.viewToggle} role="group" aria-label="Board view">
+                            <button
+                                className={view === 'layers' ? styles.viewActive : undefined}
+                                onClick={() => {
+                                    setView('layers');
+                                    localStorage.setItem('ttt-view', 'layers');
+                                }}
+                            >
+                                Layers
+                            </button>
+                            <button
+                                className={view === '3d' ? styles.viewActive : undefined}
+                                onClick={() => {
+                                    setView('3d');
+                                    localStorage.setItem('ttt-view', '3d');
+                                }}
+                            >
+                                3D
+                            </button>
                         </div>
+
+                        {view === 'layers' ? (
+                            <LayerBoard
+                                board={game.board as Board}
+                                currentTurn={game.current_turn as PlayerNumber}
+                                winningLine={winningLine}
+                                isTakeoverMode={isTakeoverMode}
+                                takeoversRemaining={myTakeovers}
+                                pendingMove={null}
+                                onCellClick={handleCellClick}
+                                disabled={!isMyTurn || winner !== null}
+                            />
+                        ) : (
+                            <>
+                                <div className={styles.canvasFrame}>
+                                    <GameBoard
+                                        board={game.board as Board}
+                                        currentTurn={game.current_turn as PlayerNumber}
+                                        hoveredCell={hoveredCell}
+                                        selectedCell={selectedCell}
+                                        winningLine={winningLine}
+                                        isTakeoverMode={isTakeoverMode}
+                                        takeoversRemaining={myTakeovers}
+                                        onCellHover={setHoveredCell}
+                                        onCellClick={handleCellClick}
+                                        disabled={!isMyTurn || winner !== null}
+                                        onContextLost={() => {
+                                            setView('layers');
+                                            setNotice('3D rendering stopped — switched to the Layers view.');
+                                            setTimeout(() => setNotice(null), 3200);
+                                        }}
+                                    />
+                                </div>
+
+                                <div className={styles.controlsHint}>
+                                    <span>Drag to rotate</span>
+                                    <span>Scroll to zoom</span>
+                                </div>
+                            </>
+                        )}
                     </div>
 
                     {/* HUD */}
@@ -308,7 +372,10 @@ export default function OnlineGamePage() {
                                     if (!isMyTurn || !game) return;
                                     // Skip turn when timer runs out
                                     const { makeMove } = await import('@/lib/supabase');
-                                    const nextTurn = getNextPlayer(game.current_turn as PlayerNumber);
+                                    const nextTurn = nextActivePlayer(
+                                        game.current_turn as PlayerNumber,
+                                        seatedNumbers
+                                    );
                                     await makeMove(game.id, game.board, nextTurn, null);
                                 }}
                             />
@@ -326,6 +393,12 @@ export default function OnlineGamePage() {
                     </div>
                 </div>
             </main>
+
+            {notice && (
+                <div className={styles.notice} role="status">
+                    {notice}
+                </div>
+            )}
 
             {/* Win Overlay */}
             {showWinOverlay && winner && winnerPlayer && (

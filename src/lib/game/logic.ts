@@ -229,10 +229,24 @@ export function applyMove(
 }
 
 /**
- * Get the next player in turn order (1 -> 2 -> 3 -> 1)
+ * Get the next player in turn order (1 -> 2 -> 3 -> 1).
+ * `playerCount` matters: a two-player game must never hand the turn to a
+ * player 3 that does not exist.
  */
-export function getNextPlayer(current: PlayerNumber): PlayerNumber {
-    return ((current % 3) + 1) as PlayerNumber;
+export function getNextPlayer(current: PlayerNumber, playerCount: 2 | 3 = 3): PlayerNumber {
+    return ((current % playerCount) + 1) as PlayerNumber;
+}
+
+/**
+ * Next player among the ones actually seated, skipping any who have left.
+ */
+export function nextActivePlayer(
+    current: PlayerNumber,
+    active: PlayerNumber[]
+): PlayerNumber {
+    const seated = [...new Set(active)].sort((a, b) => a - b);
+    if (seated.length === 0) return current;
+    return seated.find(p => p > current) ?? seated[0];
 }
 
 /**

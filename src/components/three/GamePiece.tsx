@@ -3,16 +3,18 @@
 
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Mesh, MeshStandardMaterial } from 'three';
-import { PlayerNumber, PieceType, DEFAULT_PIECES } from '@/lib/game/types';
+import { Mesh } from 'three';
+import { PlayerNumber, DEFAULT_PIECES } from '@/lib/game/types';
 
 interface GamePieceProps {
     player: PlayerNumber;
     position: [number, number, number];
     isWinning?: boolean;
     isNew?: boolean;
+    /** Fades pieces that are not part of the winning line. */
+    dimmed?: boolean;
     onClick?: () => void;
 }
 
@@ -21,10 +23,10 @@ export function GamePiece({
     position,
     isWinning = false,
     isNew = false,
+    dimmed = false,
     onClick
 }: GamePieceProps) {
     const meshRef = useRef<Mesh>(null);
-    const [hovered, setHovered] = useState(false);
 
     const config = DEFAULT_PIECES[player];
     const baseScale = 0.35;
@@ -54,9 +56,11 @@ export function GamePiece({
         const materialProps = {
             color: config.color,
             emissive: isWinning ? config.color : (config.emissive || '#000000'),
-            emissiveIntensity: isWinning ? 0.5 : 0.1,
-            metalness: 0.3,
-            roughness: 0.4,
+            emissiveIntensity: isWinning ? 0.75 : 0.25,
+            metalness: 0.25,
+            roughness: 0.3,
+            transparent: dimmed,
+            opacity: dimmed ? 0.3 : 1,
         };
 
         switch (config.type) {
@@ -67,8 +71,6 @@ export function GamePiece({
                         position={position}
                         scale={isNew ? 0.01 : baseScale}
                         onClick={onClick}
-                        onPointerOver={() => setHovered(true)}
-                        onPointerOut={() => setHovered(false)}
                     >
                         <sphereGeometry args={[1, 32, 32]} />
                         <meshStandardMaterial {...materialProps} />
@@ -83,8 +85,6 @@ export function GamePiece({
                         scale={isNew ? 0.01 : baseScale}
                         rotation={[Math.PI / 4, Math.PI / 4, 0]}
                         onClick={onClick}
-                        onPointerOver={() => setHovered(true)}
-                        onPointerOut={() => setHovered(false)}
                     >
                         <boxGeometry args={[1.4, 1.4, 1.4]} />
                         <meshStandardMaterial {...materialProps} />
@@ -98,8 +98,6 @@ export function GamePiece({
                         position={position}
                         scale={isNew ? 0.01 : baseScale}
                         onClick={onClick}
-                        onPointerOver={() => setHovered(true)}
-                        onPointerOut={() => setHovered(false)}
                     >
                         <octahedronGeometry args={[1, 0]} />
                         <meshStandardMaterial {...materialProps} />
@@ -114,8 +112,6 @@ export function GamePiece({
                         scale={isNew ? 0.01 : baseScale}
                         rotation={[Math.PI / 2, 0, 0]}
                         onClick={onClick}
-                        onPointerOver={() => setHovered(true)}
-                        onPointerOut={() => setHovered(false)}
                     >
                         <torusGeometry args={[0.7, 0.3, 16, 32]} />
                         <meshStandardMaterial {...materialProps} />
@@ -129,8 +125,6 @@ export function GamePiece({
                         position={position}
                         scale={isNew ? 0.01 : baseScale}
                         onClick={onClick}
-                        onPointerOver={() => setHovered(true)}
-                        onPointerOut={() => setHovered(false)}
                     >
                         <coneGeometry args={[0.8, 1.6, 32]} />
                         <meshStandardMaterial {...materialProps} />
@@ -144,8 +138,6 @@ export function GamePiece({
                         position={position}
                         scale={isNew ? 0.01 : baseScale}
                         onClick={onClick}
-                        onPointerOver={() => setHovered(true)}
-                        onPointerOut={() => setHovered(false)}
                     >
                         <cylinderGeometry args={[0.6, 0.6, 1.2, 32]} />
                         <meshStandardMaterial {...materialProps} />
@@ -159,8 +151,6 @@ export function GamePiece({
                         position={position}
                         scale={isNew ? 0.01 : baseScale}
                         onClick={onClick}
-                        onPointerOver={() => setHovered(true)}
-                        onPointerOut={() => setHovered(false)}
                     >
                         <sphereGeometry args={[1, 32, 32]} />
                         <meshStandardMaterial {...materialProps} />
@@ -177,12 +167,14 @@ interface GhostPieceProps {
     player: PlayerNumber;
     position: [number, number, number];
     isTakeover?: boolean;
+    /** The move is armed and one more tap plays it — render it solidly. */
+    armed?: boolean;
 }
 
-export function GhostPiece({ player, position, isTakeover = false }: GhostPieceProps) {
+export function GhostPiece({ player, position, isTakeover = false, armed = false }: GhostPieceProps) {
     const meshRef = useRef<Mesh>(null);
     const config = DEFAULT_PIECES[player];
-    const baseScale = 0.3;
+    const baseScale = armed ? 0.34 : 0.3;
 
     useFrame((state) => {
         if (meshRef.current) {
@@ -196,8 +188,8 @@ export function GhostPiece({ player, position, isTakeover = false }: GhostPieceP
     const materialProps = {
         color: isTakeover ? '#ff4444' : config.color,
         transparent: true,
-        opacity: 0.4,
-        wireframe: true,
+        opacity: armed ? 0.72 : 0.4,
+        wireframe: !armed,
     };
 
     switch (config.type) {

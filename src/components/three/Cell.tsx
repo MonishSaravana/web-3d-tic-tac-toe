@@ -75,15 +75,15 @@ export function Cell({
     // Determine color based on state
     const getColor = () => {
         if (isWinningCell) return '#22c55e';
-        if (isTakeoverTarget && isHovered) return '#ef4444';
+        if (isTakeoverTarget) return '#ef4444';
         return '#ffffff';
     };
 
     const getOpacity = () => {
-        if (isWinningCell) return 0.25;
-        if (isSelected) return 0.15;
-        if (isHovered) return 0.12;
-        if (localHover) return 0.08;
+        if (isWinningCell) return 0.3;
+        if (isSelected) return 0.38;
+        if (isHovered) return 0.2;
+        if (localHover) return 0.12;
         return 0;
     };
 
@@ -122,7 +122,7 @@ interface TicTacToeGridProps {
     lineThickness?: number;
 }
 
-export function TicTacToeGrid({ spacing, lineThickness = 0.03 }: TicTacToeGridProps) {
+export function TicTacToeGrid({ spacing, lineThickness = 0.035 }: TicTacToeGridProps) {
     // Grid dimensions
     const totalSize = spacing * 3;
     const halfTotal = totalSize / 2;
@@ -190,9 +190,11 @@ export function TicTacToeGrid({ spacing, lineThickness = 0.03 }: TicTacToeGridPr
                 <mesh key={key} position={position} rotation={rotation}>
                     <cylinderGeometry args={[lineThickness, lineThickness, length, 8]} />
                     <meshStandardMaterial
-                        color="#888888"
-                        metalness={0.3}
-                        roughness={0.7}
+                        color="#9aa4b6"
+                        emissive="#2d3340"
+                        emissiveIntensity={0.9}
+                        metalness={0.1}
+                        roughness={0.55}
                     />
                 </mesh>
             ))}
@@ -201,6 +203,6 @@ export function TicTacToeGrid({ spacing, lineThickness = 0.03 }: TicTacToeGridPr
 }
 
 // Keep the old GridLines for backwards compatibility but mark as deprecated
-export function GridLines({ spacing, size }: { spacing: number; size: number }) {
+export function GridLines({ spacing }: { spacing: number; size?: number }) {
     return <TicTacToeGrid spacing={spacing} />;
 }
